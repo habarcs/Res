@@ -8,11 +8,14 @@ def create_shifting_seq(T: int, p: float) -> Callable[[int], float]:
     T is the number of timesteps
     p is a hyperparameter affecting the sequence
     """
+    assert T > 0
+    assert p > 0
 
     def shifting_seq(t: int) -> float:
         """
         returns eta_t the noise intensity
         """
+        assert 0 < t <= T
         if t == T:
             return 0.999
         if t == 1:

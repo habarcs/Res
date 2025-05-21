@@ -32,7 +32,7 @@ class Diffusion:
         self.T = T
         self.input_dim = input_dim
 
-    def forward_process(self, lq: Tensor, hq: Tensor, t: Tensor|None = None) -> Tensor:
+    def forward_process(self, lq: Tensor, hq: Tensor, t: Tensor | None = None) -> Tensor:
         """
         Given the low quality and high quality images and a time-step it calculates the forward process and returns x_t
         q(x_t|x_0, y_0) = N(x_t; x_0 + eta_t * e_0, kappa^2 * eta_t * I)
@@ -41,14 +41,14 @@ class Diffusion:
         assert lq.shape == self.input_dim
         assert hq.shape == self.input_dim
         if t:
-            assert t.shape == (self.input_dim[0],)
+            assert t.shape == (self.input_dim[0], 1, 1, 1)
+            assert t.min().item() > 0 and t.max().item() <= self.T
         else:
             t = self.sample_timesteps()
 
         e_0 = hq - lq
-        eta_t = torch.zeros_like(t).map_(t, lambda _, x: self.shifting_seq(x))
+        eta_t = self._shift_t(t)
         mean = hq + (eta_t * e_0)
-        assert mean.shape == self.input_dim
         return torch.normal(mean, self.get_variance(t).sqrt())
 
     def reverse_process(self, lq: Tensor, f_theta: torch.nn.Module) -> Tensor:
@@ -78,7 +78,7 @@ class Diffusion:
         """
         Samples batch number of timesteps from an uniform distribution between 1 and T
         """
-        return torch.randint(1, self.T + 1, (self.input_dim[0],))
+        return torch.randint(1, self.T + 1, (self.input_dim[0], 1, 1, 1))
 
     def get_variance(self, t: int | Tensor) -> Tensor:
         """
@@ -86,13 +86,23 @@ class Diffusion:
         kappa^2 * eta_t * I
         """
         if isinstance(t, int):
-            eta_t = self.shifting_seq(t)
+            assert 0 < t <= self.T
         else:
-            assert t.shape == (self.input_dim[0],)
-            eta_t = torch.zeros_like(t).map_(t, lambda _, x: self.shifting_seq(x))
+            assert t.shape == (self.input_dim[0], 1, 1, 1)
+            assert t.min().item() > 0 and t.max().item() <= self.T
         b, c, h, w = self.input_dim
         identity = torch.eye(h, w).unsqueeze(0).repeat((c, 1, 1)).unsqueeze(0).repeat((b, 1, 1, 1))
-        assert identity.shape == self.input_dim
+        eta_t = self._shift_t(t)
         variance = self.kappa_square * eta_t * identity
-        assert variance.shape == self.input_dim
         return variance
+
+    def _shift_t(self, t: int|Tensor)-> float|Tensor:
+        """
+        Helper function that allows shifting seq to also be used on tensors
+        if t is int, returns a single float
+        else if t is a tensor of ints returns a tensor of floats
+        """
+        if isinstance(t, int):
+            return self.shifting_seq(t)
+        # type manipulation is needed, because map only works on tensors of the same type, t is ints but the shifting seq is floats
+        return torch.zeros_like(t, dtype=torch.float).map_(t.float(), lambda _, x: self.shifting_seq(int(x)))
