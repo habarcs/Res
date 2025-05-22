@@ -31,6 +31,7 @@ class Diffusion:
         self.shifting_seq = shifting_seq
         self.T = T
         self.input_dim = input_dim
+        self.t_dim = (input_dim[0], 1, 1, 1)
 
     def forward_process(self, lq: Tensor, hq: Tensor, t: Tensor | None = None) -> Tensor:
         """
@@ -41,7 +42,7 @@ class Diffusion:
         assert lq.shape == self.input_dim
         assert hq.shape == self.input_dim
         if t:
-            assert t.shape == (self.input_dim[0], 1, 1, 1)
+            assert t.shape == self.t_dim
             assert t.min().item() > 0 and t.max().item() <= self.T
         else:
             t = self.sample_timesteps()
@@ -66,11 +67,11 @@ class Diffusion:
                 eta_t = self.shifting_seq(t)
                 eta_t_1 = self.shifting_seq(t - 1)
                 alpha_t = eta_t - eta_t_1
-                x_0 = f_theta(x_t, lq, t).detach()
+                x_0 = f_theta(x_t, lq, torch.full(self.t_dim, t))
                 mean = ((eta_t_1 / eta_t) * x_t) + ((alpha_t / eta_t) * x_0)
                 x_t = mean + self.kappa * math.sqrt(eta_t_1 * alpha_t / eta_t) * e
             else:
-                x_t = f_theta(x_t, lq, t).detach()
+                x_t = f_theta(x_t, lq, torch.full(self.t_dim, t))
 
         return x_t
 
@@ -78,7 +79,7 @@ class Diffusion:
         """
         Samples batch number of timesteps from an uniform distribution between 1 and T
         """
-        return torch.randint(1, self.T + 1, (self.input_dim[0], 1, 1, 1))
+        return torch.randint(1, self.T + 1, self.t_dim)
 
     def get_variance(self, t: int | Tensor) -> Tensor:
         """
@@ -88,7 +89,7 @@ class Diffusion:
         if isinstance(t, int):
             assert 0 < t <= self.T
         else:
-            assert t.shape == (self.input_dim[0], 1, 1, 1)
+            assert t.shape == self.t_dim
             assert t.min().item() > 0 and t.max().item() <= self.T
         b, c, h, w = self.input_dim
         identity = torch.eye(h, w).unsqueeze(0).repeat((c, 1, 1)).unsqueeze(0).repeat((b, 1, 1, 1))
@@ -96,7 +97,7 @@ class Diffusion:
         variance = self.kappa_square * eta_t * identity
         return variance
 
-    def _shift_t(self, t: int|Tensor)-> float|Tensor:
+    def _shift_t(self, t: int | Tensor) -> float | Tensor:
         """
         Helper function that allows shifting seq to also be used on tensors
         if t is int, returns a single float
