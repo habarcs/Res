@@ -5,6 +5,7 @@ MODEL_FILE_NAME = "models.pth"
 
 
 def save_state(
+    batch: int,
     save_dir: Path | str,
     model: torch.nn.Module,
     ema_model: torch.nn.Module | None,
@@ -12,7 +13,8 @@ def save_state(
 ):
     if isinstance(save_dir, str):
         save_dir = Path(save_dir)
-    file = save_dir / MODEL_FILE_NAME
+    save_dir.mkdir(parents=True, exist_ok=True)
+    file = save_dir / (str(batch) + "_" + MODEL_FILE_NAME)
     torch.save(
         {
             "model": model.state_dict(),
@@ -24,18 +26,15 @@ def save_state(
 
 
 def load_state(
-    save_dir: Path | str,
-    model: torch.nn.Module,
+    load_path: Path | str,
+    model: torch.nn.Module | None,
     ema_model: torch.nn.Module | None,
-    optimizer: torch.optim.Optimizer,
+    optimizer: torch.optim.Optimizer | None,
 ) -> None:
-    if isinstance(save_dir, str):
-        save_dir = Path(save_dir)
-    file = save_dir / MODEL_FILE_NAME
-    checkpoint = torch.load(file)
-    if "model" in checkpoint:
+    checkpoint = torch.load(load_path)
+    if model and "model" in checkpoint:
         model.load_state_dict(checkpoint["model"])
     if ema_model and "ema_model" in checkpoint:
         ema_model.load_state_dict(checkpoint["ema_model"])
-    if "optimizer" in checkpoint:
+    if optimizer and "optimizer" in checkpoint:
         optimizer.load_state_dict(checkpoint["optimizer"])

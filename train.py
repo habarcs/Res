@@ -1,12 +1,11 @@
 from pathlib import Path
-from typing import Sized
 from torch.utils import data
 from torch import nn, optim
 import torch
 from diffusion import Diffusion
 from torch.optim.swa_utils import AveragedModel
 
-from state import load_state, save_state
+from state import save_state
 
 
 def train_loop(
@@ -20,20 +19,12 @@ def train_loop(
     loss_fn: nn.Module,
     optimizer: optim.Optimizer,
     save_freq: int,
-    val_freq:int,
-    log_freq:int,
-    load=False
+    val_freq: int,
+    log_freq: int,
 ):
-    assert dataloader.batch_size
-    assert isinstance(dataloader.dataset, Sized)
-
-    if load:
-        load_state(save_dir, model, ema_model, optimizer)
+    num_batches = len(dataloader)
 
     model.train()
-
-    size = len(dataloader.dataset)
-
     for batch, (lq, hq) in enumerate(dataloader):
         lq.to(device)
         hq.to(device)
@@ -49,26 +40,27 @@ def train_loop(
         if ema_model:
             ema_model.update_parameters(model)
 
-        if batch and batch % log_freq == 0:
-            current = batch * dataloader.batch_size + len(lq)
-            print(f"Train~~ loss: {loss.item():>7f}  [{current:>5d}/{size:>5d}]")
+        if (batch + 1) % log_freq == 0:
+            print(f"Train~~ loss: {loss.item():>7f}  [{batch + 1:>5d}/{num_batches:>5d}]")
             # TODO log tensorboard
-        if batch and val_dataloader and batch % val_freq ==0:
-            test_loop(device, diffusor, val_dataloader, model, loss_fn)
-        if batch and save_freq and batch % save_freq == 0:
-            save_state(save_dir, model, ema_model, optimizer)
+        if val_dataloader and (batch + 1) % val_freq == 0:
+            test_loop(device, diffusor, val_dataloader, model, loss_fn, log_freq)
+        if save_freq and (batch + 1) % save_freq == 0:
+            save_state(batch + 1, save_dir, model, ema_model, optimizer)
 
 
 def test_loop(
-    device: torch.device, diffusor: Diffusion, dataloader: data.DataLoader, model: nn.Module, loss_fn: nn.Module
+    device: torch.device,
+    diffusor: Diffusion,
+    dataloader: data.DataLoader,
+    model: nn.Module,
+    loss_fn: nn.Module,
+    log_freq: int,
 ):
-    assert dataloader.batch_size
-    assert isinstance(dataloader.dataset, Sized)
-    model.eval()
-    size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss = 0
 
+    model.eval()
     with torch.no_grad():
         for batch, (lq, hq) in enumerate(dataloader):
             lq.to(device)
@@ -76,8 +68,9 @@ def test_loop(
             pred = diffusor.reverse_process(lq, model)
             loss = loss_fn(pred, hq).item()
             test_loss += loss
-            current = batch * dataloader.batch_size + len(lq)
-            print(f"Val~~~~ loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+            if (batch + 1) % log_freq == 0:
+                print(f"Val~~~~ loss: {loss:>7f}  [{batch + 1:>5d}/{num_batches:>5d}]")
+                # TODO log tensorboard
 
     test_loss /= num_batches
     print(f"Val~~~~ Avg loss: {test_loss:>8f} \n")
