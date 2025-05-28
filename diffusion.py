@@ -41,7 +41,7 @@ class Diffusion:
         """
         assert lq.shape == self.input_dim
         assert hq.shape == self.input_dim
-        if t:
+        if t is not None:
             assert t.shape == self.t_dim
             assert t.min().item() > 0 and t.max().item() <= self.T
         else:
