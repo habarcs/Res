@@ -2,10 +2,10 @@ from pathlib import Path
 from torch.utils import data
 from torch import nn, optim
 import torch
-from diffusion import Diffusion
+from diffusion.diffusion import Diffusion
 from torch.optim.swa_utils import AveragedModel
 
-from state import save_state
+from models import save_state
 
 
 def train_loop(

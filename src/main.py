@@ -1,9 +1,9 @@
 from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
-from predictor import UNet
-from dataloader import create_cifar_dataloaders
-from diffusion import Diffusion
-from shifting_sequence import create_shifting_seq
-from train import train_loop
+from models.unet_simple import UNet
+from datapipe.dataloader import create_cifar_dataloaders
+from diffusion.diffusion import Diffusion
+from diffusion.shifting_sequence import create_shifting_seq
+from training.train import train_loop
 import torch
 from datetime import datetime
 

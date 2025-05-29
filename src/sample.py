@@ -1,11 +1,11 @@
 import argparse
 
 import torch
-from dataloader import create_cifar_dataloaders
-from diffusion import Diffusion
-from predictor import UNet
-from shifting_sequence import create_shifting_seq
-from state import load_state
+from datapipe.dataloader import create_cifar_dataloaders
+from diffusion.diffusion import Diffusion
+from models.unet_simple import UNet
+from diffusion.shifting_sequence import create_shifting_seq
+from models import load_state
 from pathlib import Path
 from torchvision.utils import save_image
 
@@ -34,11 +34,10 @@ if __name__ == "__main__":
     
     model.eval()
     with torch.no_grad():
-        lq, hq = next(iter(test_loader))
-        lq.to(device)
+        hq, lq = next(iter(test_loader))
         hq.to(device)
+        lq.to(device)
         pred = diffusor.reverse_process(lq, model)
-
     save_image(lq, out / "lq.png")    
     save_image(pred, out / "pr.png")    
     save_image(hq, out / "hq.png")    
