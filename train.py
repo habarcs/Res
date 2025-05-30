@@ -3,7 +3,7 @@ from models.unet_simple import UNet
 from datapipe.dataloader import create_cifar_dataloaders
 from diffusion.diffusion import Diffusion
 from diffusion.shifting_sequence import create_shifting_seq
-from training.train import train_loop
+from training.loop import train_loop
 import torch
 from datetime import datetime
 

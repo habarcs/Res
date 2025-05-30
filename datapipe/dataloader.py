@@ -3,7 +3,8 @@ import torch
 from torch.utils import data
 from torchvision import datasets
 from torchvision.transforms import v2
-from data_aug import create_row_transforms
+
+from datapipe.data_aug import create_row_transforms
 
 
 class DiffusionDataset(data.Dataset):
