@@ -7,26 +7,6 @@ from torchvision.transforms import v2
 from datapipe.data_aug import create_row_transforms
 
 
-class DiffusionDataset(data.Dataset):
-    def __init__(
-        self, root: Path | str, train: bool, hq_transform: v2.Transform | None, lq_transform: v2.Transform | None
-    ) -> None:
-        super().__init__()
-        self.root = root
-        self.train = train
-        self.hq_transform = hq_transform
-        self.lq_transform = lq_transform
-        self.dataset = datasets.CIFAR10(root, train, download=True)  # TODO swap
-
-    def __len__(self) -> int:
-        return len(self.dataset)
-
-    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
-        base_img, _ = self.dataset[idx]
-        hq_img = self.hq_transform(base_img) if self.hq_transform else base_img
-        lq_img = self.lq_transform(base_img) if self.lq_transform else base_img
-        return hq_img, lq_img
-
 
 def create_dataloader(
     dataset: data.Dataset, batch_size: int, num_workers: int, sampler: data.Sampler | None = None
