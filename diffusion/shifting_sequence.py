@@ -9,7 +9,7 @@ def create_shifting_seq(T: int, p: float) -> Callable[[int], float]:
     p is a hyperparameter affecting the sequence
     """
     assert T > 0
-    assert 1 >= p >= 0
+    assert p >= 0
 
     def shifting_seq(t: int) -> float:
         """

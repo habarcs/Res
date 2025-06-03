@@ -23,7 +23,7 @@ class Diffusion:
         T: int,
         shifting_sec: this function is generating the shifting sequence
         """
-        assert 1 >= kappa >= 0
+        assert kappa >= 0
         assert T > 0
         self.kappa = kappa
         self.shifting_seq = shifting_seq
