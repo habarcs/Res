@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Callable, Optional, Tuple, Union
-from torchvision.datasets import ImageFolder, default_loader
+from torchvision.datasets import ImageFolder
+from torchvision.datasets.folder import default_loader
 
 class DiffusionDataset(ImageFolder):
     def __init__(

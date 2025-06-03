@@ -1,23 +1,36 @@
-from torch.optim.swa_utils import AveragedModel, get_ema_multi_avg_fn
-from models.unet_simple import UNet
-from datapipe.dataloader import create_cifar_dataloaders
+from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
-from diffusion.shifting_sequence import create_shifting_seq
-from training.loop import train_loop
 import torch
-from datetime import datetime
+import config
+from models.unet_simple import UNet
+from models.ema_model import ema_model_from_config
+from training.trainer import train_loop
 
-if __name__ == "__main__":
-    run_id = datetime.now().strftime("%Y-%m-%dT%H:%M")
+
+def main():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(2025)
 
-    model = UNet().to(device)
-    ema_model = AveragedModel(model, multi_avg_fn=get_ema_multi_avg_fn(0.999)).to(device)
-    train_loader, val_loader = create_cifar_dataloaders("data", img_size=32, sf=4, mean=0.5, std=0.5, batch_size=4, num_workers=4, num_batches=1_000)
-    diffusor = Diffusion(0.5, create_shifting_seq(5, 0.2), 5, (4, 3, 32, 32))
+    model = UNet()
+    ema_model = ema_model_from_config(model, config.EMAModelCfg())
+    diffusor = Diffusion.from_config(config.DiffusionCfg())
     loss_fn = torch.nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters())
+    optimizer = torch.optim.Adam(model.parameters())
+    train_loader, val_loader, test_loader = data_loader_from_config(config.DataCfg())
 
-    train_loop(device, "checkpoint/" + run_id, diffusor, train_loader, val_loader, model, ema_model, loss_fn, optim, 10, 250, 1)
+    train_loop(
+        config.TrainingCfg(),
+        device,
+        diffusor,
+        train_loader,
+        val_loader,
+        test_loader,
+        model,
+        ema_model,
+        loss_fn,
+        optimizer
+    )
 
+
+if __name__ == "__main__":
+    main()
