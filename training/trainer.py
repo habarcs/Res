@@ -19,6 +19,7 @@ def train_loop(
     ema_model: AveragedModel | None,
     loss_fn: nn.Module,
     optimizer: optim.Optimizer,
+    scheduler: optim.lr_scheduler.LRScheduler,
     start_iteration: int = 0,
 ):
     model.to(device)
@@ -43,7 +44,9 @@ def train_loop(
         if ema_model:
             ema_model.update_parameters(model)
 
-        if (batch + 1) % cfg.log_freq == 0:
+        if cfg.scheduler_freq and (batch + 1) % cfg.scheduler_freq == 0:
+            scheduler.step()
+        if cfg.log_freq and (batch + 1) % cfg.log_freq == 0:
             print(
                 f"Train: loss: {loss.item():>7f}  [{batch + 1:>5d}/{cfg.iterations:>5d}]"
             )
@@ -52,7 +55,7 @@ def train_loop(
             val_model = ema_model if ema_model else model
             eval_loop(cfg, "Val", device, diffusor, val_dataloader, val_model, loss_fn)
         if cfg.save_freq and (batch + 1) % cfg.save_freq == 0:
-            save_state(cfg, str(batch + 1), model, ema_model, optimizer)
+            save_state(cfg, str(batch + 1), model, ema_model, optimizer, scheduler)
 
     if test_dataloader:
         test_model = ema_model if ema_model else model
@@ -80,10 +83,10 @@ def eval_loop(
             pred, progress = diffusor.reverse_process(lq, model, True)
             loss = loss_fn(pred, hq).item()
             test_loss += loss
-            if (batch + 1) % cfg.log_freq == 0:
+            save_images(cfg, f"{split}_{batch + 1}", hq, lq, pred, progress)
+            if cfg.log_freq and (batch + 1) % cfg.log_freq == 0:
                 print(f"{split}: loss: {loss:>7f}  [{batch + 1:>5d}/{num_batches:>5d}]")
                 # TODO log tensorboard
-                save_images(cfg, f"{split}_{batch + 1}", hq, lq, pred, progress)
 
     test_loss /= num_batches
     print(f"{split}: Avg loss: {test_loss:>8f} \n")

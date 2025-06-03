@@ -15,11 +15,17 @@ def main():
     ema_model = ema_model_from_config(model, config.EMAModelCfg())
     diffusor = Diffusion.from_config(config.DiffusionCfg())
     loss_fn = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters())
+    training_cfg = config.TrainingCfg()
+    optimizer = torch.optim.Adam(model.parameters(), training_cfg.lr_start)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer,
+        training_cfg.iterations // training_cfg.scheduler_freq,
+        training_cfg.lr_end,
+    )
     train_loader, val_loader, test_loader = data_loader_from_config(config.DataCfg())
 
     train_loop(
-        config.TrainingCfg(),
+        training_cfg,
         device,
         diffusor,
         train_loader,
@@ -29,6 +35,7 @@ def main():
         ema_model,
         loss_fn,
         optimizer,
+        scheduler,
     )
 
 

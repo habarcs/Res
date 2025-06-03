@@ -11,6 +11,7 @@ def save_state(
     model: torch.nn.Module,
     ema_model: torch.nn.Module | None,
     optimizer: torch.optim.Optimizer,
+    scheduler: torch.optim.lr_scheduler.LRScheduler,
 ):
     path = cfg.save_dir / cfg.run_id / "models"
     path.mkdir(parents=True, exist_ok=True)
@@ -21,6 +22,7 @@ def save_state(
             "model": model.state_dict(),
             "ema_model": ema_model.state_dict() if ema_model else None,
             "optimizer": optimizer.state_dict(),
+            "scheduler": scheduler.state_dict(),
         },
         file,
     )
@@ -45,6 +47,7 @@ def load_state(
     model: torch.nn.Module | None,
     ema_model: torch.nn.Module | None,
     optimizer: torch.optim.Optimizer | None,
+    scheduler: torch.optim.lr_scheduler.LRScheduler | None,
 ) -> config.TrainingCfg:
     checkpoint = torch.load(file)
     if model and "model" in checkpoint:
@@ -53,6 +56,8 @@ def load_state(
         ema_model.load_state_dict(checkpoint["ema_model"])
     if optimizer and "optimizer" in checkpoint:
         optimizer.load_state_dict(checkpoint["optimizer"])
+    if scheduler and "scheduler" in checkpoint:
+        scheduler.load_state_dict(checkpoint["scheduler"])
     if "config" in checkpoint:
         return config.TrainingCfg(**checkpoint["config"])
     return config.TrainingCfg()

@@ -21,6 +21,7 @@ class DiffusionCfg:
 class TrainingCfg:
     # one iteration is one batch, so everything here depends on batch_size defined in datacfg
     iterations: int = 10000
+    scheduler_freq: int = 500
     save_freq: int = 250
     val_freq: int = 1000
     log_freq: int = 10
