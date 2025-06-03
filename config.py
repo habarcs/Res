@@ -9,11 +9,13 @@ class EMAModelCfg:
     enabled: bool = True
     decay: float = 0.999
 
+
 @dataclass
 class DiffusionCfg:
     p: float = 0.4
     T: int = 10
     kappa: float = 0.3
+
 
 @dataclass
 class TrainingCfg:
@@ -23,10 +25,11 @@ class TrainingCfg:
     val_freq: int = 250
     log_freq: int = 1
     run_id: str = datetime.now().isoformat(timespec="minutes")
-    save_path: Path = Path("checkpoint")
+    save_dir: Path = Path("checkpoint")
 
     def todict(self) -> dict:
         return dataclasses.asdict(self)
+
 
 @dataclass
 class DataCfg:

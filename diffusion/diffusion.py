@@ -31,11 +31,7 @@ class Diffusion:
 
     @classmethod
     def from_config(cls, cfg: config.DiffusionCfg):
-        return cls(
-            cfg.kappa,
-            cfg.T,
-            create_shifting_seq(cfg.T, cfg.p)
-    )
+        return cls(cfg.kappa, cfg.T, create_shifting_seq(cfg.T, cfg.p))
 
     def forward_process(self, lq: Tensor, hq: Tensor, t: Tensor) -> Tensor:
         """
@@ -53,17 +49,20 @@ class Diffusion:
         std = self.kappa * eta_t.sqrt()
         return torch.normal(mean, std)
 
-    def reverse_process(self, lq: Tensor, f_theta: torch.nn.Module) -> Tensor:
+    def reverse_process(
+        self, lq: Tensor, f_theta: torch.nn.Module, collect_progress: bool
+    ) -> tuple[Tensor, list[Tensor]]:
         """
         Takes a low quality image y and return x_0 by running the reverse process
         lq is the low quality image
         f_theta is a model trained to predict x_0 from lq, x_t and t
         """
         assert lq.dim() == 4
-        
+
         t_dim = (lq.shape[0], 1, 1, 1)
         eta_T = self.shifting_seq(self.T)
         x_t = torch.normal(lq, self.kappa * math.sqrt(eta_T))
+        progress = []
 
         for t in range(self.T, 1, -1):
             e = torch.randn_like(x_t)
@@ -73,8 +72,10 @@ class Diffusion:
             x_0 = f_theta(x_t, lq, torch.full(t_dim, t))
             mean = ((eta_t_1 / eta_t) * x_t) + ((alpha_t / eta_t) * x_0)
             x_t = mean + self.kappa * math.sqrt(eta_t_1 * alpha_t / eta_t) * e
-                
-        return f_theta(x_t, lq, torch.full(t_dim, t))
+            if collect_progress and t in [self.T, 2, (self.T + 1) // 2]:
+                progress.append(x_t)
+
+        return f_theta(x_t, lq, torch.full(t_dim, t)), progress
 
     def sample_timesteps(self, batch_size) -> Tensor:
         """
@@ -87,4 +88,6 @@ class Diffusion:
         Helper function that allows shifting seq to also be used on tensors
         """
         # type manipulation is needed, because map only works on tensors of the same type, t is ints but the shifting seq is floats
-        return torch.zeros_like(t, dtype=torch.float).map_(t.float(), lambda _, x: self.shifting_seq(int(x)))
+        return torch.zeros_like(t, dtype=torch.float).map_(
+            t.float(), lambda _, x: self.shifting_seq(int(x))
+        )

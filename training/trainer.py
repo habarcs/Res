@@ -5,7 +5,7 @@ import config
 from diffusion.diffusion import Diffusion
 from torch.optim.swa_utils import AveragedModel
 
-from training.saver import save_state
+from training.saver import save_state, save_images
 
 
 def train_loop(
@@ -19,7 +19,7 @@ def train_loop(
     ema_model: AveragedModel | None,
     loss_fn: nn.Module,
     optimizer: optim.Optimizer,
-    start_iteration: int = 0
+    start_iteration: int = 0,
 ):
     model.to(device)
     if ema_model:
@@ -44,27 +44,29 @@ def train_loop(
             ema_model.update_parameters(model)
 
         if (batch + 1) % cfg.log_freq == 0:
-            print(f"Train: loss: {loss.item():>7f}  [{batch + 1:>5d}/{cfg.iterations:>5d}]")
+            print(
+                f"Train: loss: {loss.item():>7f}  [{batch + 1:>5d}/{cfg.iterations:>5d}]"
+            )
             # TODO log tensorboard
         if cfg.val_freq and val_dataloader and (batch + 1) % cfg.val_freq == 0:
             val_model = ema_model if ema_model else model
-            eval_loop("Val", device, diffusor, val_dataloader, val_model, loss_fn, cfg.log_freq)
+            eval_loop(cfg, "Val", device, diffusor, val_dataloader, val_model, loss_fn)
         if cfg.save_freq and (batch + 1) % cfg.save_freq == 0:
             save_state(cfg, str(batch + 1), model, ema_model, optimizer)
 
     if test_dataloader:
         test_model = ema_model if ema_model else model
-        eval_loop("Test", device, diffusor, test_dataloader, test_model, loss_fn, cfg.log_freq)
+        eval_loop(cfg, "Test", device, diffusor, test_dataloader, test_model, loss_fn)
 
 
 def eval_loop(
+    cfg: config.TrainingCfg,
     split: str,
     device: torch.device,
     diffusor: Diffusion,
     dataloader: data.DataLoader,
     model: nn.Module,
     loss_fn: nn.Module,
-    log_freq: int,
 ):
     num_batches = len(dataloader)
     test_loss = 0
@@ -75,12 +77,13 @@ def eval_loop(
         for batch, (lq, hq) in enumerate(dataloader):
             lq.to(device)
             hq.to(device)
-            pred = diffusor.reverse_process(lq, model)
+            pred, progress = diffusor.reverse_process(lq, model, True)
             loss = loss_fn(pred, hq).item()
             test_loss += loss
-            if (batch + 1) % log_freq == 0:
+            if (batch + 1) % cfg.log_freq == 0:
                 print(f"{split}: loss: {loss:>7f}  [{batch + 1:>5d}/{num_batches:>5d}]")
                 # TODO log tensorboard
+                save_images(cfg, f"{split}_{batch + 1}", hq, lq, pred, progress)
 
     test_loss /= num_batches
     print(f"{split}: Avg loss: {test_loss:>8f} \n")

@@ -28,7 +28,7 @@ def main():
         model,
         ema_model,
         loss_fn,
-        optimizer
+        optimizer,
     )
 
 

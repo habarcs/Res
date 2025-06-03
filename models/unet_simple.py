@@ -21,9 +21,11 @@ class UNet(torch.nn.Module):
 
         self.out = torch.nn.Conv2d(64, 3, 1)
 
-    def forward(self, x_t: torch.Tensor, lq: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, x_t: torch.Tensor, lq: torch.Tensor, t: torch.Tensor
+    ) -> torch.Tensor:
         assert x_t.shape == lq.shape
-        assert t.shape == (x_t.shape[0], 1, 1, 1) 
+        assert t.shape == (x_t.shape[0], 1, 1, 1)
         assert x_t.shape[-1] % 8 == 0 and x_t.shape[-2] % 8 == 0, (
             "the input is not a multiple of 8, the output won't match the input"
         )
@@ -57,7 +59,9 @@ class _ConvBlock(torch.nn.Module):
 class _DownBlock(torch.nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
         super().__init__()
-        self.layers = torch.nn.Sequential(torch.nn.MaxPool2d(2, 2), _ConvBlock(in_channels, out_channels))
+        self.layers = torch.nn.Sequential(
+            torch.nn.MaxPool2d(2, 2), _ConvBlock(in_channels, out_channels)
+        )
 
     def forward(self, x):
         return self.layers(x)
@@ -66,7 +70,11 @@ class _DownBlock(torch.nn.Module):
 class _UpBlock(torch.nn.Module):
     def __init__(self, in_channels, out_channels) -> None:
         super().__init__()
-        self.up = torch.nn.Sequential(torch.nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2))
+        self.up = torch.nn.Sequential(
+            torch.nn.ConvTranspose2d(
+                in_channels, in_channels // 2, kernel_size=2, stride=2
+            )
+        )
         self.conv = _ConvBlock(in_channels, out_channels)
 
     def forward(self, side, down):

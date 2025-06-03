@@ -13,7 +13,9 @@ def create_row_transforms(
             v2.CenterCrop(size),
         ]
     )
-    normalizer = v2.Compose([v2.ToDtype(torch.float32, scale=True), v2.Normalize((mean,), (std,))])
+    normalizer = v2.Compose(
+        [v2.ToDtype(torch.float32, scale=True), v2.Normalize((mean,), (std,))]
+    )
     row_scaler = v2.Compose(
         [
             v2.Lambda(lambda img: img[..., 0::scale, :]),

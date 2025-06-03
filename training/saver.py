@@ -1,9 +1,10 @@
 from pathlib import Path
 import torch
+import torchvision
 
 import config
 
-       
+
 def save_state(
     cfg: config.TrainingCfg,
     id: str,
@@ -11,8 +12,9 @@ def save_state(
     ema_model: torch.nn.Module | None,
     optimizer: torch.optim.Optimizer,
 ):
-    cfg.save_path.mkdir(parents=True, exist_ok=True)
-    file = cfg.save_path / f"{cfg.run_id}_{id}.pth"
+    path = cfg.save_dir / cfg.run_id / "models"
+    path.mkdir(parents=True, exist_ok=True)
+    file = path / f"{id}_all.pth"
     torch.save(
         {
             "config": cfg.todict(),
@@ -22,6 +24,20 @@ def save_state(
         },
         file,
     )
+
+
+def save_images(
+    cfg: config.TrainingCfg,
+    id: str,
+    hq: torch.Tensor,
+    lq: torch.Tensor,
+    pred: torch.Tensor,
+    progress: list[torch.Tensor],
+):
+    path = cfg.save_dir / cfg.run_id / "images"
+    path.mkdir(parents=True, exist_ok=True)
+    file = path / f"{id}.png"
+    torchvision.utils.save_image([hq, lq] + progress + [pred], file)
 
 
 def load_state(

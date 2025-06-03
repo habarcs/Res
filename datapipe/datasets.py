@@ -3,6 +3,7 @@ from typing import Any, Callable, Optional, Tuple, Union
 from torchvision.datasets import ImageFolder
 from torchvision.datasets.folder import default_loader
 
+
 class DiffusionDataset(ImageFolder):
     def __init__(
         self,
@@ -25,7 +26,6 @@ class DiffusionDataset(ImageFolder):
         self.lq_transform = lq_transform
         self.hq_transform = hq_transform
 
-    
     def __getitem__(self, index: int) -> Tuple[Any, Any, Any]:
         """
         Args:
