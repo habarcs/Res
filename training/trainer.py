@@ -29,7 +29,7 @@ def train_loop(
     train_iterator = iter(train_dataloader)
     for batch in range(start_iteration, cfg.iterations):
         model.train()
-        lq, hq, _ = next(train_iterator)
+        hq, lq, _ = next(train_iterator)
         lq.to(device)
         hq.to(device)
         t = diffusor.sample_timesteps(lq.shape[0]).to(device)
@@ -77,7 +77,7 @@ def eval_loop(
     model.eval()
     model.to(device)
     with torch.no_grad():
-        for batch, (lq, hq) in enumerate(dataloader):
+        for batch, (hq, lq, _) in enumerate(dataloader):
             lq.to(device)
             hq.to(device)
             pred, progress = diffusor.reverse_process(lq, model, True)

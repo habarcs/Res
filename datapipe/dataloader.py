@@ -14,7 +14,7 @@ class InfiniteRandomSampler(data.Sampler[int]):
     """
 
     def __init__(self, data_source: Sized) -> None:
-        super().__init__(data_source)
+        super().__init__()
         self.n = len(data_source)
 
     def __iter__(self) -> Iterator[int]:
