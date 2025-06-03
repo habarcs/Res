@@ -12,20 +12,22 @@ class EMAModelCfg:
 
 @dataclass
 class DiffusionCfg:
-    p: float = 0.4
-    T: int = 10
-    kappa: float = 0.3
+    p: float = 0.3
+    T: int = 15
+    kappa: float = 2.0
 
 
 @dataclass
 class TrainingCfg:
     # one iteration is one batch, so everything here depends on batch_size defined in datacfg
-    iterations: int = 100000
+    iterations: int = 10000
     save_freq: int = 250
-    val_freq: int = 250
-    log_freq: int = 1
+    val_freq: int = 1000
+    log_freq: int = 10
     run_id: str = datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("checkpoint")
+    lr_start: float = 5e-5
+    lr_end: float = 2e-5
 
     def todict(self) -> dict:
         return dataclasses.asdict(self)
@@ -38,9 +40,9 @@ class DataCfg:
     scale_factor: int = 4
     mean: float = 0.5
     std: float = 0.5
-    batch_size: int = 12
+    batch_size: int = 64
     num_workers: int = 4
     split_seed: int = 42
-    train_ratio: float = 0.7
-    val_ratio: float = 0.15
-    test_ratio: float = 0.15
+    train_ratio: float = 0.9
+    val_ratio: float = 0.05
+    test_ratio: float = 0.05
