@@ -18,14 +18,15 @@ class InfiniteRandomSampler(data.Sampler[int]):
         self.n = len(data_source)
 
     def __iter__(self) -> Iterator[int]:
-        yield random.randrange(0, self.n)
+        while True:
+            yield from torch.randint(high=self.n, size=(32,)).tolist()
 
 
 def data_loader_from_config(
     cfg: config.DataCfg,
 ) -> tuple[data.DataLoader, data.DataLoader, data.DataLoader]:
     hq_transform, lq_transform = create_row_transforms(
-        cfg.image_size, cfg.scale_factor, cfg.mean, cfg.std
+        cfg.image_size, cfg.scale_factor, cfg.mean, cfg.std, cfg.grayscale
     )
     dataset = DiffusionDataset(cfg.data_dir, lq_transform, hq_transform)
     split_generator = torch.Generator().manual_seed(

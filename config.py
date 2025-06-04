@@ -41,6 +41,7 @@ class DataCfg:
     scale_factor: int = 4
     mean: float = 0.5
     std: float = 0.5
+    grayscale: bool = True
     batch_size: int = 64
     num_workers: int = 4
     split_seed: int = 42
