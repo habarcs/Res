@@ -6,9 +6,10 @@ import torch
 
 
 class UNet(torch.nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, graysclale: bool) -> None:
         super().__init__()
-        self.first = _ConvBlock(7, 64)
+        channels = 1 if graysclale else 3
+        self.first = _ConvBlock(1 + channels + channels, 64) # time, xt, lq
         self.down1 = _DownBlock(64, 128)
         self.down2 = _DownBlock(128, 256)
         self.down3 = _DownBlock(256, 512)
@@ -19,7 +20,7 @@ class UNet(torch.nn.Module):
         self.up3 = _UpBlock(256, 128)
         self.up4 = _UpBlock(128, 64)
 
-        self.out = torch.nn.Conv2d(64, 3, 1)
+        self.out = torch.nn.Conv2d(64, channels, 1)
 
     def forward(
         self, x_t: torch.Tensor, lq: torch.Tensor, t: torch.Tensor

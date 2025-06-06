@@ -10,8 +10,9 @@ from training.trainer import train_loop
 def main():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(2025)
-
-    model = UNet()
+    data_cfg = config.DataCfg()
+    train_loader, val_loader, test_loader = data_loader_from_config(data_cfg)
+    model = UNet(data_cfg.grayscale)
     ema_model = ema_model_from_config(model, config.EMAModelCfg())
     diffusor = Diffusion.from_config(config.DiffusionCfg())
     loss_fn = torch.nn.MSELoss()
@@ -22,7 +23,6 @@ def main():
         training_cfg.iterations // training_cfg.scheduler_freq,
         training_cfg.lr_end,
     )
-    train_loader, val_loader, test_loader = data_loader_from_config(config.DataCfg())
 
     train_loop(
         training_cfg,
