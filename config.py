@@ -48,3 +48,13 @@ class DataCfg:
     train_ratio: float = 0.9
     val_ratio: float = 0.05
     test_ratio: float = 0.05
+
+
+@dataclass
+class ModelCfg:
+    # for possible architectures see https://smp.readthedocs.io/en/latest/models.html
+    arch: str = "unetplusplus"
+    # for possible encoder and encoder weights options see https://smp.readthedocs.io/en/latest/encoders.html
+    encoder: str = "resnet18"
+    encoder_weights: str | None = None
+    t_embedding_dim: int = 32

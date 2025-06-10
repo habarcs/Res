@@ -39,7 +39,9 @@ def save_images(
     path = cfg.save_dir / cfg.run_id / "images"
     path.mkdir(parents=True, exist_ok=True)
     file = path / f"{id}.png"
-    torchvision.utils.save_image(torch.cat([hq, lq] + progress + [pred]), file, nrow=hq.shape[0])
+    torchvision.utils.save_image(
+        torch.cat([hq, lq] + progress + [pred]), file, nrow=hq.shape[0]
+    )
 
 
 def load_state(

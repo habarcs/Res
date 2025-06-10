@@ -9,7 +9,7 @@ class UNet(torch.nn.Module):
     def __init__(self, graysclale: bool) -> None:
         super().__init__()
         channels = 1 if graysclale else 3
-        self.first = _ConvBlock(1 + channels + channels, 64) # time, xt, lq
+        self.first = _ConvBlock(1 + channels + channels, 64)  # time, xt, lq
         self.down1 = _DownBlock(64, 128)
         self.down2 = _DownBlock(128, 256)
         self.down3 = _DownBlock(256, 512)
@@ -26,11 +26,13 @@ class UNet(torch.nn.Module):
         self, x_t: torch.Tensor, lq: torch.Tensor, t: torch.Tensor
     ) -> torch.Tensor:
         assert x_t.shape == lq.shape
-        assert t.shape == (x_t.shape[0], 1, 1, 1)
+        assert t.shape == (x_t.shape[0],)
         assert x_t.shape[-1] % 8 == 0 and x_t.shape[-2] % 8 == 0, (
             "the input is not a multiple of 8, the output won't match the input"
         )
-        x = torch.cat((x_t, lq, t.expand(-1, -1, x_t.shape[2], x_t.shape[3])), dim=1)
+
+        t = t.reshape(-1, 1, 1, 1).expand(-1, -1, x_t.shape[2], x_t.shape[3])
+        x = torch.cat((x_t, lq, t), dim=1)
         x1 = self.first(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)

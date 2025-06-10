@@ -25,6 +25,7 @@ class Diffusion:
         """
         assert kappa >= 0
         assert T > 0
+
         self.kappa = kappa
         self.shifting_seq = shifting_seq
         self.T = T
@@ -40,14 +41,16 @@ class Diffusion:
         lq is y_0, hq is x_0
         """
         assert lq.shape == hq.shape
+        assert lq.dim() == 4
+        assert t.dim() == 1
         assert t.shape[0] == lq.shape[0]
         assert t.min().item() > 0 and t.max().item() <= self.T
 
         e_0 = lq - hq
         eta_t = self.__shift_t(t)
-        mean = hq + (eta_t * e_0)
+        mean = hq + (eta_t.reshape(-1, 1, 1, 1) * e_0)
         std = self.kappa * eta_t.sqrt()
-        return torch.normal(mean, std)
+        return torch.normal(mean, std.reshape(-1, 1, 1, 1))
 
     def reverse_process(
         self, lq: Tensor, f_theta: torch.nn.Module, collect_progress: bool
@@ -59,7 +62,7 @@ class Diffusion:
         """
         assert lq.dim() == 4
 
-        t_dim = (lq.shape[0], 1, 1, 1)
+        t_dim = (lq.shape[0],)
         eta_T = self.shifting_seq(self.T)
         x_t = torch.normal(lq, self.kappa * math.sqrt(eta_T))
         progress = []
@@ -81,7 +84,7 @@ class Diffusion:
         """
         Samples batch number of timesteps from an uniform distribution between 1 and T
         """
-        return torch.randint(1, self.T + 1, (batch_size, 1, 1, 1))
+        return torch.randint(1, self.T + 1, (batch_size,))
 
     def __shift_t(self, t: Tensor) -> Tensor:
         """
