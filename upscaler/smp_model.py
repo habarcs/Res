@@ -54,6 +54,7 @@ class SmpModel(torch.nn.Module):
         self.check_input_shape(x)
 
         t_embedded = self.t_embedding(t - 1) # timesteps are between 1 - T, but for embedding need to be 0 - T-1
+        # TODO maybe applying the time embedding to the initial input is beneficial
 
         features = self.encoder(x)
         time_embedded_features = [

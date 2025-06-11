@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import dataclasses
 from pathlib import Path
 from datetime import datetime
+from typing import Sequence
 
 
 @dataclass
@@ -58,3 +59,32 @@ class ModelCfg:
     encoder: str = "resnet18"
     encoder_weights: str | None = None
     t_embedding_dim: int = 32
+
+@dataclass
+class AutoencoderCfg:
+    enabled: bool = True
+    arch: str = ""
+    weights: str = ""
+
+
+@dataclass
+class ClassifierDataCfg:
+    data_dir: Path = Path("/home/marton/work/rin2d/radiology_ai/US")
+    image_size: int = 224
+    mean: Sequence[float] = (0.485, 0.456, 0.406)
+    std: Sequence[float] = (0.229, 0.224, 0.225)
+    batch_size: int = 1024
+    num_workers: int = 4
+    split_seed: int = 42
+    train_ratio: float = 0.9
+    val_ratio: float = 0.05
+    test_ratio: float = 0.05
+
+@dataclass
+class ClassifierFineTuneCfg:
+    epochs: int = 30
+    starting_lr: float = 4e-5
+    ending_lr: float = 1e-8
+    run_id: str = datetime.now().isoformat(timespec="minutes")
+    save_dir: Path = Path("checkpoint")
+    

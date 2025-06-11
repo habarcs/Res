@@ -10,19 +10,14 @@ def save_state(
     id: str,
     model: torch.nn.Module,
     ema_model: torch.nn.Module | None,
-    optimizer: torch.optim.Optimizer,
-    scheduler: torch.optim.lr_scheduler.LRScheduler,
 ):
     path = cfg.save_dir / cfg.run_id / "models"
     path.mkdir(parents=True, exist_ok=True)
-    file = path / f"{id}_all.pth"
+    file = path / f"{id}_diffusion.pth"
     torch.save(
         {
-            "config": cfg.todict(),
-            "model": model.state_dict(),
+            "model": model.state_dict() if model else None,
             "ema_model": ema_model.state_dict() if ema_model else None,
-            "optimizer": optimizer.state_dict(),
-            "scheduler": scheduler.state_dict(),
         },
         file,
     )
@@ -48,18 +43,9 @@ def load_state(
     file: Path,
     model: torch.nn.Module | None,
     ema_model: torch.nn.Module | None,
-    optimizer: torch.optim.Optimizer | None,
-    scheduler: torch.optim.lr_scheduler.LRScheduler | None,
-) -> config.TrainingCfg:
+) -> None:
     checkpoint = torch.load(file)
     if model and "model" in checkpoint:
         model.load_state_dict(checkpoint["model"])
     if ema_model and "ema_model" in checkpoint:
         ema_model.load_state_dict(checkpoint["ema_model"])
-    if optimizer and "optimizer" in checkpoint:
-        optimizer.load_state_dict(checkpoint["optimizer"])
-    if scheduler and "scheduler" in checkpoint:
-        scheduler.load_state_dict(checkpoint["scheduler"])
-    if "config" in checkpoint:
-        return config.TrainingCfg(**checkpoint["config"])
-    return config.TrainingCfg()

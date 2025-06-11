@@ -55,7 +55,7 @@ def train_loop(
             val_model = ema_model if ema_model else model
             eval_loop(cfg, "Val", device, diffusor, val_dataloader, val_model, loss_fn)
         if cfg.save_freq and (batch + 1) % cfg.save_freq == 0:
-            save_state(cfg, str(batch + 1), model, ema_model, optimizer, scheduler)
+            save_state(cfg, str(batch + 1), model, ema_model)
 
     if test_dataloader:
         test_model = ema_model if ema_model else model

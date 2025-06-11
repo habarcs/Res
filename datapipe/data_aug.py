@@ -1,4 +1,5 @@
-from torchvision.transforms import v2
+from typing import Sequence
+from torchvision.transforms import InterpolationMode, v2
 from torchvision import transforms
 import torch
 
@@ -23,3 +24,14 @@ def create_row_transforms(
     hq_transform = v2.Compose(base_transform + normalizer)
     lq_transform = v2.Compose(base_transform + row_scaler + normalizer)
     return hq_transform, lq_transform
+
+
+def create_image_classification_transform(size: int, mean: Sequence[float], std: Sequence[float] ) -> v2.Transform:
+    transform = v2.Compose([
+                               v2.Resize(size, InterpolationMode.BICUBIC, antialias=True),
+                               v2.CenterCrop(size),
+                               v2.PILToTensor(),
+                               v2.ConvertImageDtype(),
+                               v2.Normalize(mean=mean, std=std),
+                           ])
+    return transform
