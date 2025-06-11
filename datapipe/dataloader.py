@@ -5,7 +5,6 @@ from torch.utils import data
 from datapipe.data_aug import create_row_transforms
 import config
 from datapipe.datasets import DiffusionDataset
-import random
 
 
 class InfiniteRandomSampler(data.Sampler[int]):

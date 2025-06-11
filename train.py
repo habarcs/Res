@@ -2,8 +2,8 @@ from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
 import torch
 import config
-from models.ema_model import ema_model_from_config
-from models.smp_model import SmpModel
+from upscaler.ema_model import ema_model_from_config
+from upscaler.smp_model import SmpModel
 from training.trainer import train_loop
 
 
