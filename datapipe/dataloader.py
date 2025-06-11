@@ -45,9 +45,9 @@ def data_loader_from_config(
 
 def classfication_data_loader_from_config(
     cfg: config.ClassifierDataCfg
-) -> tuple[data.DataLoader, data.DataLoader, data.DataLoader]:
+) -> tuple[data.DataLoader, data.DataLoader, data.DataLoader, list[str]]:
     transform = create_image_classification_transform(cfg.image_size, cfg.mean, cfg.std)
-    dataset = DiffusionDataset(cfg.data_dir, None, transform)
+    dataset = DiffusionDataset(cfg.data_dir, transform, transform)
     split_generator = torch.Generator().manual_seed(
         cfg.split_seed
     )  # assure that split is the same everytime
@@ -59,4 +59,4 @@ def classfication_data_loader_from_config(
     )
     val_loader = data.DataLoader(val, cfg.batch_size, num_workers=cfg.num_workers)
     test_loader = data.DataLoader(train, cfg.batch_size, num_workers=cfg.num_workers)
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, dataset.classes
