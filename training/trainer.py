@@ -51,7 +51,17 @@ def train_loop(
             scheduler.step()
         if cfg.val_freq and (batch + 1) % cfg.val_freq == 0:
             val_model = ema_model if ema_model else model
-            val_loss = eval_loop(cfg, logger, "Val", batch + 1, device, diffusor, val_dataloader, val_model, loss_fn)
+            val_loss = eval_loop(
+                cfg,
+                logger,
+                "Val",
+                batch + 1,
+                device,
+                diffusor,
+                val_dataloader,
+                val_model,
+                loss_fn,
+            )
             save_state(cfg, str(batch + 1), val_loss, model, ema_model)
 
 

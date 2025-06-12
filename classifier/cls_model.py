@@ -1,3 +1,4 @@
+from unittest.mock import Mock
 from pathlib import Path
 from typing import Self
 from torch.optim import AdamW
@@ -6,6 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torch
 from datapipe.dataloader import classfication_data_loader_from_config
+from training.saver import find_best_model
 
 import config
 
@@ -31,13 +33,26 @@ class ClsModel(torch.nn.Module):
         return model
 
 
+def eval_best(
+    fine_tune_cfg: config.ClassifierFineTuneCfg, data_cfg: config.ClassifierDataCfg
+):
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    _, _, test_loader, _ = classfication_data_loader_from_config(data_cfg)
+    best_model_path = find_best_model(fine_tune_cfg, False)
+    model = ClsModel.from_weights(best_model_path)
+    loss_fn = torch.nn.CrossEntropyLoss()
+
+    acc = _test_step(test_loader, Mock(), device, model, loss_fn)
+    print(f"Final test accuracy: {acc}")
+
+
 def fine_tune(
     fine_tune_cfg: config.ClassifierFineTuneCfg, data_cfg: config.ClassifierDataCfg
 ):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     logger = SummaryWriter(fine_tune_cfg.save_dir / fine_tune_cfg.run_id / "log")
-    train_loader, val_loader, test_loader, classes = (
-        classfication_data_loader_from_config(data_cfg)
+    train_loader, val_loader, _, classes = classfication_data_loader_from_config(
+        data_cfg
     )
     model = ClsModel(len(classes))
     optimizer = AdamW(model.parameters(), lr=fine_tune_cfg.starting_lr)
@@ -90,13 +105,13 @@ def _test_step(dataloader, logger, device, model, loss_fn, label="Val"):
     acc = 100 * correct
     logger.add_scalar(f"{label}/loss", test_loss)
     logger.add_scalar(f"{label}/acc", acc)
-    print(
-        f"{label} Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n"
-    )
+    print(f"{label} Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
     return acc
 
 
-def _save_model(model: ClsModel, cfg: config.ClassifierFineTuneCfg, epoch_id: int, acc: float):
+def _save_model(
+    model: ClsModel, cfg: config.ClassifierFineTuneCfg, epoch_id: int, acc: float
+):
     path = cfg.save_dir / cfg.run_id / "models"
     path.mkdir(parents=True, exist_ok=True)
     file = path / f"{epoch_id:03d}_classifier_{acc:06.2f}.pth"

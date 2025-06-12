@@ -2,7 +2,10 @@ from typing import Callable, Iterator, Sized
 import torch
 from torch.utils import data
 
-from datapipe.data_aug import create_image_classification_transform, create_row_transforms
+from datapipe.data_aug import (
+    create_image_classification_transform,
+    create_row_transforms,
+)
 import config
 from datapipe.datasets import DiffusionDataset
 
@@ -44,7 +47,7 @@ def data_loader_from_config(
 
 
 def classfication_data_loader_from_config(
-    cfg: config.ClassifierDataCfg
+    cfg: config.ClassifierDataCfg,
 ) -> tuple[data.DataLoader, data.DataLoader, data.DataLoader, list[str]]:
     transform = create_image_classification_transform(cfg.image_size, cfg.mean, cfg.std)
     dataset = DiffusionDataset(cfg.data_dir, transform, transform)

@@ -58,6 +58,7 @@ class ModelCfg:
     encoder_weights: str | None = None
     t_embedding_dim: int = 32
 
+
 @dataclass
 class AutoencoderCfg:
     enabled: bool = True
@@ -78,6 +79,7 @@ class ClassifierDataCfg:
     val_ratio: float = 0.05
     test_ratio: float = 0.05
 
+
 @dataclass
 class ClassifierFineTuneCfg:
     epochs: int = 30
@@ -85,4 +87,3 @@ class ClassifierFineTuneCfg:
     ending_lr: float = 1e-8
     run_id: str = "cls_" + datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("out")
-    
