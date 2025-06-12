@@ -52,6 +52,7 @@ class Diffusion:
         std = self.kappa * eta_t.sqrt()
         return torch.normal(mean, std.reshape(-1, 1, 1, 1))
 
+    @torch.no_grad()
     def reverse_process(
         self, lq: Tensor, f_theta: torch.nn.Module, collect_progress: bool
     ) -> tuple[Tensor, list[Tensor]]:

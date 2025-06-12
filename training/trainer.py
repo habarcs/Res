@@ -1,20 +1,21 @@
 from torch.utils import data
 from torch import nn, optim
 import torch
+from torch.utils.tensorboard import SummaryWriter
 import config
 from diffusion.diffusion import Diffusion
 from torch.optim.swa_utils import AveragedModel
 
-from training.saver import save_state, save_images
+from training.saver import save_state
 
 
 def train_loop(
     cfg: config.TrainingCfg,
     device: torch.device,
+    logger: SummaryWriter,
     diffusor: Diffusion,
     train_dataloader: data.DataLoader,
-    val_dataloader: data.DataLoader | None,
-    test_dataloader: data.DataLoader | None,
+    val_dataloader: data.DataLoader,
     model: nn.Module,
     ema_model: AveragedModel | None,
     loss_fn: nn.Module,
@@ -44,49 +45,47 @@ def train_loop(
         if ema_model:
             ema_model.update_parameters(model)
 
+        logger.add_scalar("Train/loss", loss.item(), batch + 1)
+
         if cfg.scheduler_freq and (batch + 1) % cfg.scheduler_freq == 0:
             scheduler.step()
-        if cfg.log_freq and (batch + 1) % cfg.log_freq == 0:
-            print(
-                f"Train: loss: {loss.item():>7f}  [{batch + 1:>5d}/{cfg.iterations:>5d}]"
-            )
-            # TODO log tensorboard
-        if cfg.val_freq and val_dataloader and (batch + 1) % cfg.val_freq == 0:
+        if cfg.val_freq and (batch + 1) % cfg.val_freq == 0:
             val_model = ema_model if ema_model else model
-            eval_loop(cfg, "Val", device, diffusor, val_dataloader, val_model, loss_fn)
-        if cfg.save_freq and (batch + 1) % cfg.save_freq == 0:
-            save_state(cfg, str(batch + 1), model, ema_model)
-
-    if test_dataloader:
-        test_model = ema_model if ema_model else model
-        eval_loop(cfg, "Test", device, diffusor, test_dataloader, test_model, loss_fn)
+            val_loss = eval_loop(cfg, logger, "Val", batch + 1, device, diffusor, val_dataloader, val_model, loss_fn)
+            save_state(cfg, str(batch + 1), val_loss, model, ema_model)
 
 
+@torch.no_grad()
 def eval_loop(
     cfg: config.TrainingCfg,
+    logger: SummaryWriter,
     split: str,
+    iteration: int,
     device: torch.device,
     diffusor: Diffusion,
     dataloader: data.DataLoader,
     model: nn.Module,
     loss_fn: nn.Module,
-):
+) -> float:
     num_batches = len(dataloader)
-    test_loss = 0
+    test_loss = 0.0
+    batch_size = dataloader.batch_size
+    assert isinstance(batch_size, int)
 
     model.eval()
     model.to(device)
-    with torch.no_grad():
-        for batch, (hq, lq, _) in enumerate(dataloader):
-            lq.to(device)
-            hq.to(device)
-            pred, progress = diffusor.reverse_process(lq, model, True)
-            loss = loss_fn(pred, hq).item()
-            test_loss += loss
-            save_images(cfg, f"{split}_{batch + 1}", hq, lq, pred, progress)
-            if cfg.log_freq and (batch + 1) % cfg.log_freq == 0:
-                print(f"{split}: loss: {loss:>7f}  [{batch + 1:>5d}/{num_batches:>5d}]")
-                # TODO log tensorboard
+    for batch, (hq, lq, _) in enumerate(dataloader):
+        lq.to(device)
+        hq.to(device)
+        pred, progress = diffusor.reverse_process(lq, model, True)
+        loss = loss_fn(pred, hq).item()
+        test_loss += loss
+        for i in range(len(lq)):
+            image_id = batch_size * batch + i
+            images = [lq[i] + [p[i] for p in progress] + pred[i] + hq[i]]
+            logger.add_images(f"{split}/{image_id}", torch.stack(images))
+        logger.add_scalar(f"{split}/loss", loss)
 
     test_loss /= num_batches
-    print(f"{split}: Avg loss: {test_loss:>8f} \n")
+    logger.add_scalar(f"{split}/avgloss", test_loss, iteration)
+    return test_loss

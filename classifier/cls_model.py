@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Self
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torch
 from datapipe.dataloader import classfication_data_loader_from_config
@@ -30,18 +31,11 @@ class ClsModel(torch.nn.Module):
         return model
 
 
-def save_model(self, cfg: config.ClassifierFineTuneCfg, id: str):
-    path = cfg.save_dir / cfg.run_id / "models"
-    path.mkdir(parents=True, exist_ok=True)
-    file = path / f"{id}_classifier.pth"
-    state = {"weights": self.state_dict, "num_classes": self.num_classes}
-    torch.save(state, file)
-
-
-def fine_tune():
+def fine_tune(
+    fine_tune_cfg: config.ClassifierFineTuneCfg, data_cfg: config.ClassifierDataCfg
+):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    fine_tune_cfg = config.ClassifierFineTuneCfg()
-    data_cfg = config.ClassifierDataCfg()
+    logger = SummaryWriter(fine_tune_cfg.save_dir / fine_tune_cfg.run_id / "log")
     train_loader, val_loader, test_loader, classes = (
         classfication_data_loader_from_config(data_cfg)
     )
@@ -54,14 +48,13 @@ def fine_tune():
 
     for epoch in range(fine_tune_cfg.epochs):
         print(f"Epoch {epoch + 1}/{fine_tune_cfg.epochs}")
-        _train_step(train_loader, device, model, loss_fn, optimizer)
-        _test_step(val_loader, device, model, loss_fn)
+        _train_step(train_loader, logger, device, model, loss_fn, optimizer)
+        acc = _test_step(val_loader, logger, device, model, loss_fn)
+        _save_model(model, fine_tune_cfg, epoch + 1, acc)
         scheduler.step()
 
-    _test_step(test_loader, device, model, loss_fn, "Test")
 
-
-def _train_step(train_loader, device, model, loss_fn, optimizer):
+def _train_step(train_loader, logger, device, model, loss_fn, optimizer):
     model.train()
     dataset_size = len(train_loader.dataset)
     for batch, (images, _, targets) in enumerate(train_loader):
@@ -74,24 +67,38 @@ def _train_step(train_loader, device, model, loss_fn, optimizer):
         optimizer.step()
         optimizer.zero_grad()
 
-        if batch % 100 == 0:
-            current = (batch + 1) * len(images)
-            print(f"Train: loss: {loss.item():>7f}  [{current:>5d}/{dataset_size:>5d}]")
+        current = (batch + 1) * len(images)
+        print(f"Train: loss: {loss.item():>7f}  [{current:>5d}/{dataset_size:>5d}]")
+        logger.add_scalar("Train/loss", loss.item())
 
 
-def _test_step(dataloader, device, model, loss_fn, label="Validation"):
+@torch.no_grad()
+def _test_step(dataloader, logger, device, model, loss_fn, label="Val"):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
-    test_loss, correct = 0, 0
-    with torch.no_grad():
-        for images, _, targets in dataloader:
-            images, targets = images.to(device), targets.to(device)
-            preds = model(images)
-            test_loss += loss_fn(preds, targets).item()
-            correct += (preds.argmax(1) == targets).type(torch.float).sum().item()
+    test_loss, correct = 0.0, 0
+
+    for images, _, targets in dataloader:
+        images, targets = images.to(device), targets.to(device)
+        preds = model(images)
+        test_loss += loss_fn(preds, targets).item()
+        correct += (preds.argmax(1) == targets).type(torch.float).sum().item()
+
     test_loss /= num_batches
     correct /= size
+    acc = 100 * correct
+    logger.add_scalar(f"{label}/loss", test_loss)
+    logger.add_scalar(f"{label}/acc", acc)
     print(
-        f"{label} Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n"
+        f"{label} Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n"
     )
+    return acc
+
+
+def _save_model(model: ClsModel, cfg: config.ClassifierFineTuneCfg, epoch_id: int, acc: float):
+    path = cfg.save_dir / cfg.run_id / "models"
+    path.mkdir(parents=True, exist_ok=True)
+    file = path / f"{epoch_id:03d}_classifier_{acc:06.2f}.pth"
+    state = {"weights": model.state_dict, "num_classes": model.num_classes}
+    torch.save(state, file)

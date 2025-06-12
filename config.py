@@ -23,11 +23,9 @@ class TrainingCfg:
     # one iteration is one batch, so everything here depends on batch_size defined in datacfg
     iterations: int = 100_000
     scheduler_freq: int = 5000
-    save_freq: int = 50
     val_freq: int = 5000
-    log_freq: int = 50
-    run_id: str = datetime.now().isoformat(timespec="minutes")
-    save_dir: Path = Path("checkpoint")
+    run_id: str = "diff_" + datetime.now().isoformat(timespec="minutes")
+    save_dir: Path = Path("out")
     lr_start: float = 5e-5
     lr_end: float = 2e-5
 
@@ -85,6 +83,6 @@ class ClassifierFineTuneCfg:
     epochs: int = 30
     starting_lr: float = 4e-5
     ending_lr: float = 1e-8
-    run_id: str = datetime.now().isoformat(timespec="minutes")
-    save_dir: Path = Path("checkpoint")
+    run_id: str = "cls_" + datetime.now().isoformat(timespec="minutes")
+    save_dir: Path = Path("out")
     

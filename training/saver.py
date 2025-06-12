@@ -1,41 +1,27 @@
 from pathlib import Path
 import torch
-import torchvision
 
 import config
 
 
 def save_state(
     cfg: config.TrainingCfg,
-    id: str,
+    batch_id: str,
+    test_loss: float,
     model: torch.nn.Module,
     ema_model: torch.nn.Module | None,
 ):
     path = cfg.save_dir / cfg.run_id / "models"
     path.mkdir(parents=True, exist_ok=True)
-    file = path / f"{id}_diffusion.pth"
+    formatted_loss = f"{test_loss:.2e}".replace(".", "_").replace("-", "m")
+    formatted_batch_id = f"{batch_id:07d}"
+    file = path / f"{formatted_batch_id}_diffusion_{formatted_loss}.pth"
     torch.save(
         {
             "model": model.state_dict() if model else None,
             "ema_model": ema_model.state_dict() if ema_model else None,
         },
         file,
-    )
-
-
-def save_images(
-    cfg: config.TrainingCfg,
-    id: str,
-    hq: torch.Tensor,
-    lq: torch.Tensor,
-    pred: torch.Tensor,
-    progress: list[torch.Tensor],
-):
-    path = cfg.save_dir / cfg.run_id / "images"
-    path.mkdir(parents=True, exist_ok=True)
-    file = path / f"{id}.png"
-    torchvision.utils.save_image(
-        torch.cat([hq, lq] + progress + [pred]), file, nrow=hq.shape[0]
     )
 
 
