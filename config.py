@@ -52,9 +52,9 @@ class DataCfg:
 @dataclass
 class ModelCfg:
     # for possible architectures see https://smp.readthedocs.io/en/latest/models.html
-    arch: str = "unetplusplus"
+    arch: str = "unetplusplus" # some modification may be neccessary if changed
     # for possible encoder and encoder weights options see https://smp.readthedocs.io/en/latest/encoders.html
-    encoder: str = "resnet18"
+    encoder: str = "resnet18" # some modification may be neccessary if changed
     encoder_weights: str | None = None
     t_embedding_dim: int = 32
 
