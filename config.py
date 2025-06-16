@@ -43,6 +43,7 @@ class DataCfg:
     grayscale: bool = True
     batch_size: int = 64
     num_workers: int = 4
+    # The dataset splitting should be the same for training all the models.
     split_seed: int = 42
     train_ratio: float = 0.9
     val_ratio: float = 0.05
@@ -74,6 +75,7 @@ class ClassifierDataCfg:
     std: Sequence[float] = (0.229, 0.224, 0.225)
     batch_size: int = 1024
     num_workers: int = 4
+    # The dataset splitting should be the same for training all the models.
     split_seed: int = 42
     train_ratio: float = 0.9
     val_ratio: float = 0.05
