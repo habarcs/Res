@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import dataclasses
 from pathlib import Path
 from datetime import datetime
 from typing import Sequence
@@ -29,9 +28,6 @@ class TrainingCfg:
     lr_start: float = 5e-5
     lr_end: float = 2e-5
 
-    def todict(self) -> dict:
-        return dataclasses.asdict(self)
-
 
 @dataclass
 class DataCfg:
@@ -53,11 +49,23 @@ class DataCfg:
 @dataclass
 class ModelCfg:
     # for possible architectures see https://smp.readthedocs.io/en/latest/models.html
-    arch: str = "unetplusplus" # some modification may be neccessary if changed
+    arch: str = (
+        "unetplusplus"  # some modification of the code may be neccessary if changed
+    )
     # for possible encoder and encoder weights options see https://smp.readthedocs.io/en/latest/encoders.html
-    encoder: str = "resnet18" # some modification may be neccessary if changed
+    # This encoder refers to the downsampling block, not the latent diffusion autoencoder
+    encoder: str = (
+        "resnet18"  # some modification of the code may be neccessary if changed
+    )
     encoder_weights: str | None = None
     t_embedding_dim: int = 32
+
+
+@dataclass
+class LossCfg:
+    perceptual_model_path: Path = Path("")
+    perceptual_coef: float = 0.1
+    perceptual_loss_weights: list[float] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] 
 
 
 @dataclass

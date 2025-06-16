@@ -21,6 +21,7 @@ class ClsModel(torch.nn.Module):
         # replace classifier head, to have right dimensions, needed, because of pre-trained weights
         num_features = self.backbone.head.in_features
         self.backbone.head = torch.nn.Linear(num_features, self.num_classes)
+        self.num_layers = len(self.backbone.features)
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         return self.backbone(image)

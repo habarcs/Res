@@ -6,6 +6,7 @@ from upscaler.ema_model import ema_model_from_config
 from upscaler.smp_model import SmpModel
 from training.trainer import train_loop
 from torch.utils.tensorboard import SummaryWriter
+from loss.combined_loss import CombinedLoss
 
 
 def train():
@@ -14,6 +15,7 @@ def train():
     diffusion_cfg = config.DiffusionCfg()
     training_cfg = config.TrainingCfg()
     ema_cfg = config.EMAModelCfg()
+    loss_cfg = config.LossCfg()
     logger = SummaryWriter(training_cfg.save_dir / training_cfg.run_id / "log")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -24,7 +26,7 @@ def train():
     ema_model = ema_model_from_config(model, ema_cfg)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
-    loss_fn = torch.nn.MSELoss()
+    loss_fn = CombinedLoss.from_config(loss_cfg)
     optimizer = torch.optim.Adam(model.parameters(), training_cfg.lr_start)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
