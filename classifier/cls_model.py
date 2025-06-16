@@ -55,7 +55,7 @@ def fine_tune(
     train_loader, val_loader, _, classes = classfication_data_loader_from_config(
         data_cfg
     )
-    model = ClsModel(len(classes))
+    model = ClsModel(len(classes)).to(device)
     if torch.cuda.is_available():
         model.compile()
     optimizer = AdamW(model.parameters(), lr=fine_tune_cfg.starting_lr)
