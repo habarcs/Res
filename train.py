@@ -29,6 +29,7 @@ def train():
     loss_fn = CombinedLoss.from_config(loss_cfg)
 
     if torch.cuda.is_available():
+        torch.set_float32_matmul_precision('high')
         model.compile()
         loss_fn.compile()
 

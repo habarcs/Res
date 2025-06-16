@@ -57,6 +57,7 @@ def fine_tune(
     )
     model = ClsModel(len(classes)).to(device)
     if torch.cuda.is_available():
+        torch.set_float32_matmul_precision('high')
         model.compile()
     optimizer = AdamW(model.parameters(), lr=fine_tune_cfg.starting_lr)
     scheduler = CosineAnnealingLR(
