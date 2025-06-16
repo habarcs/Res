@@ -65,7 +65,7 @@ class ModelCfg:
 class LossCfg:
     perceptual_model_path: Path = Path("")
     perceptual_coef: float = 0.1
-    perceptual_loss_weights: list[float] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0] 
+    perceptual_loss_weights: Sequence[float] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0) 
 
 
 @dataclass
