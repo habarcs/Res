@@ -56,6 +56,8 @@ def fine_tune(
         data_cfg
     )
     model = ClsModel(len(classes))
+    if torch.cuda.is_available():
+        model.compile()
     optimizer = AdamW(model.parameters(), lr=fine_tune_cfg.starting_lr)
     scheduler = CosineAnnealingLR(
         optimizer, T_max=fine_tune_cfg.epochs, eta_min=fine_tune_cfg.ending_lr

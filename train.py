@@ -27,6 +27,11 @@ def train():
     diffusor = Diffusion.from_config(diffusion_cfg)
 
     loss_fn = CombinedLoss.from_config(loss_cfg)
+
+    if torch.cuda.is_available():
+        model.compile()
+        loss_fn.compile()
+
     optimizer = torch.optim.Adam(model.parameters(), training_cfg.lr_start)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer,
