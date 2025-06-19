@@ -30,20 +30,26 @@ class TrainingCfg:
 
 
 @dataclass
-class DataCfg:
+class BaseDataCfg:
+    # dataset
     data_dir: Path = Path("/home/marton/work/rin2d/radiology_ai/US")
     image_size: int = 224
+
+    # training split the following settings should not be changed
+    split_seed: int = 42
+    train_ratio: float = 0.9
+    val_ratio: float = 0.05
+    test_ratio: float = 0.05
+
+
+@dataclass
+class DataCfg(BaseDataCfg):
     scale_factor: int = 4
     mean: float = 0.5
     std: float = 0.5
     grayscale: bool = True
     batch_size: int = 64
     num_workers: int = 4
-    # The dataset splitting should be the same for training all the models.
-    split_seed: int = 42
-    train_ratio: float = 0.9
-    val_ratio: float = 0.05
-    test_ratio: float = 0.05
 
 
 @dataclass
@@ -76,18 +82,11 @@ class AutoencoderCfg:
 
 
 @dataclass
-class ClassifierDataCfg:
-    data_dir: Path = Path("/home/marton/work/rin2d/radiology_ai/US")
-    image_size: int = 224
+class ClassifierDataCfg(BaseDataCfg):
     mean: Sequence[float] = (0.485, 0.456, 0.406)
     std: Sequence[float] = (0.229, 0.224, 0.225)
     batch_size: int = 1024
     num_workers: int = 4
-    # The dataset splitting should be the same for training all the models.
-    split_seed: int = 42
-    train_ratio: float = 0.9
-    val_ratio: float = 0.05
-    test_ratio: float = 0.05
 
 
 @dataclass
