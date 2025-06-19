@@ -28,7 +28,7 @@ def train_loop(
         ema_model.to(device)
 
     train_iterator = iter(train_dataloader)
-    for batch in range(start_iteration, cfg.iterations):
+    for iteration in range(start_iteration, cfg.iterations):
         model.train()
         hq, lq, _ = next(train_iterator)
         lq.to(device)
@@ -45,24 +45,25 @@ def train_loop(
         if ema_model:
             ema_model.update_parameters(model)
 
-        logger.add_scalar("Train/loss", loss.item(), batch + 1)
+        logger.add_scalar("Train/loss", loss.item(), iteration + 1)
+        print(f"Train {iteration + 1} loss: {loss.item()}")
 
-        if cfg.scheduler_freq and (batch + 1) % cfg.scheduler_freq == 0:
+        if cfg.scheduler_freq and (iteration + 1) % cfg.scheduler_freq == 0:
             scheduler.step()
-        if cfg.val_freq and (batch + 1) % cfg.val_freq == 0:
+        if cfg.val_freq and (iteration + 1) % cfg.val_freq == 0:
             val_model = ema_model if ema_model else model
             val_loss = eval_loop(
                 cfg,
                 logger,
                 "Val",
-                batch + 1,
+                iteration,
                 device,
                 diffusor,
                 val_dataloader,
                 val_model,
                 loss_fn,
             )
-            save_state(cfg, str(batch + 1), val_loss, model, ema_model)
+            save_state(cfg, str(iteration + 1), val_loss, model, ema_model)
 
 
 @torch.no_grad()
@@ -93,9 +94,10 @@ def eval_loop(
         for i in range(len(lq)):
             image_id = batch_size * batch + i
             images = [lq[i] + [p[i] for p in progress] + pred[i] + hq[i]]
-            logger.add_images(f"{split}/{image_id}", torch.stack(images))
-        logger.add_scalar(f"{split}/loss", loss)
+            logger.add_images(f"{split}/{image_id}", torch.stack(images), iteration + 1)
+        logger.add_scalar(f"{split}/loss/{iteration + 1}", loss, batch + 1)
+        print(f"{split} {batch + 1} loss: {loss}")
 
     test_loss /= num_batches
-    logger.add_scalar(f"{split}/avgloss", test_loss, iteration)
+    logger.add_scalar(f"{split}/avgloss", test_loss, iteration + 1)
     return test_loss

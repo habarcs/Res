@@ -69,7 +69,7 @@ def fine_tune(
     for epoch in range(fine_tune_cfg.epochs):
         print(f"Epoch {epoch + 1}/{fine_tune_cfg.epochs}")
         _train_step(train_loader, logger, device, model, loss_fn, optimizer)
-        acc = _test_step(val_loader, logger, device, model, loss_fn)
+        acc = _test_step(val_loader, logger, device, model, loss_fn, epoch=epoch)
         _save_model(model, fine_tune_cfg, epoch + 1, acc)
         scheduler.step()
 
@@ -89,11 +89,11 @@ def _train_step(train_loader, logger, device, model, loss_fn, optimizer):
 
         current = (batch + 1) * len(images)
         print(f"Train: loss: {loss.item():>7f}  [{current:>5d}/{dataset_size:>5d}]")
-        logger.add_scalar("Train/loss", loss.item())
+        logger.add_scalar("Train/loss", loss.item(), batch + 1)
 
 
 @torch.no_grad()
-def _test_step(dataloader, logger, device, model, loss_fn, label="Val"):
+def _test_step(dataloader, logger, device, model, loss_fn, label="Val", epoch=0):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -108,9 +108,11 @@ def _test_step(dataloader, logger, device, model, loss_fn, label="Val"):
     test_loss /= num_batches
     correct /= size
     acc = 100 * correct
-    logger.add_scalar(f"{label}/loss", test_loss)
-    logger.add_scalar(f"{label}/acc", acc)
-    print(f"{label} Error: \n Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    logger.add_scalar(f"{label}/loss", test_loss, epoch + 1)
+    logger.add_scalar(f"{label}/acc", acc, epoch + 1)
+    print(
+        f"{label} epoch {epoch + 1}: Accuracy: {(acc):>0.1f}%, Avg loss: {test_loss:>8f}\n"
+    )
     return acc
 
 
