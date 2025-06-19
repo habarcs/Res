@@ -1,17 +1,25 @@
-from pathlib import Path
+import argparse
 import config
 import torch
 from unittest.mock import Mock
 
 from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
-from training.saver import find_best_model, load_state
+from training.saver import load_state
 from training.trainer import eval_loop
 from upscaler.ema_model import ema_model_from_config
 from upscaler.smp_model import SmpModel
 
 
-def evaluate_best_model():
+def get_args() -> tuple[str, bool]:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("model_path", required=True)
+    parser.add_argument("--no-ema", action="store_false")
+    args = parser.parse_args()
+    return args.model_path, args.no_ema
+
+
+def evaluate_model(model_path: str, no_ema: bool = False):
     data_cfg = config.DataCfg()
     model_cfg = config.ModelCfg()
     diffusion_cfg = config.DiffusionCfg()
@@ -26,12 +34,11 @@ def evaluate_best_model():
     ema_model = ema_model_from_config(model, ema_cfg)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
-    best_model_path = find_best_model(training_cfg, True)
-    ema_model_loaded = load_state(best_model_path, model, ema_model)
+    ema_model_loaded = load_state(model_path, model, ema_model)
 
     loss_fn = torch.nn.MSELoss()
 
-    eval_model = ema_model if ema_model and ema_model_loaded else model
+    eval_model = ema_model if not no_ema and ema_model and ema_model_loaded else model
     loss = eval_loop(
         training_cfg,
         Mock(),
@@ -47,4 +54,5 @@ def evaluate_best_model():
 
 
 if __name__ == "__main__":
-    evaluate_best_model()
+    model_path, no_ema = get_args()
+    evaluate_model(model_path, no_ema)

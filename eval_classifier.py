@@ -1,7 +1,15 @@
-from classifier.cls_model import eval_best
+import argparse
+from classifier.cls_model import eval_model
 import config
+
+
+def get_model_path() -> str:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("model_path", required=True)
+    return parser.parse_args().model_path
+
 
 if __name__ == "__main__":
     fine_tune_cfg = config.ClassifierFineTuneCfg()
     data_cfg = config.ClassifierDataCfg()
-    eval_best(fine_tune_cfg, data_cfg)
+    eval_model(fine_tune_cfg, data_cfg, get_model_path())

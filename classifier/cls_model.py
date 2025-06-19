@@ -7,7 +7,6 @@ from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torch
 from datapipe.dataloader import classfication_data_loader_from_config
-from training.saver import find_best_model
 
 import config
 
@@ -28,19 +27,20 @@ class ClsModel(torch.nn.Module):
 
     @classmethod
     def from_weights(cls, path: Path | str) -> Self:
-        state = torch.load(path)
+        state = torch.load(path, weights_only=False)
         model = cls(state["num_classes"])
         model.load_state_dict(state["weights"])
         return model
 
 
-def eval_best(
-    fine_tune_cfg: config.ClassifierFineTuneCfg, data_cfg: config.ClassifierDataCfg
+def eval_model(
+    fine_tune_cfg: config.ClassifierFineTuneCfg,
+    data_cfg: config.ClassifierDataCfg,
+    model_path: str,
 ):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     _, _, test_loader, _ = classfication_data_loader_from_config(data_cfg)
-    best_model_path = find_best_model(fine_tune_cfg, False)
-    model = ClsModel.from_weights(best_model_path)
+    model = ClsModel.from_weights(model_path)
     loss_fn = torch.nn.CrossEntropyLoss()
 
     acc = _test_step(test_loader, Mock(), device, model, loss_fn)
@@ -57,7 +57,7 @@ def fine_tune(
     )
     model = ClsModel(len(classes)).to(device)
     if torch.cuda.is_available():
-        torch.set_float32_matmul_precision('high')
+        torch.set_float32_matmul_precision("high")
         model.compile()
     optimizer = AdamW(model.parameters(), lr=fine_tune_cfg.starting_lr)
     scheduler = CosineAnnealingLR(
@@ -119,5 +119,9 @@ def _save_model(
     path = cfg.save_dir / cfg.run_id / "models"
     path.mkdir(parents=True, exist_ok=True)
     file = path / f"{epoch_id:03d}_classifier_{acc:06.2f}.pth"
-    state = {"weights": model.state_dict, "num_classes": model.num_classes}
+    state = {
+        "weights": model.state_dict,
+        "num_classes": model.num_classes,
+        "acc": float,
+    }
     torch.save(state, file)
