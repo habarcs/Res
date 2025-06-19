@@ -1,3 +1,4 @@
+import argparse
 from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
 import torch
@@ -9,11 +10,20 @@ from torch.utils.tensorboard import SummaryWriter
 from loss.combined_loss import CombinedLoss
 
 
+def get_optional_run_id() -> str | None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run-id", default=None)
+    return parser.parse_args().run_id
+
+
 def train():
     data_cfg = config.DataCfg()
     model_cfg = config.ModelCfg()
     diffusion_cfg = config.DiffusionCfg()
     training_cfg = config.TrainingCfg()
+    run_id = get_optional_run_id()
+    if run_id:
+        training_cfg.run_id = run_id
     ema_cfg = config.EMAModelCfg()
     loss_cfg = config.LossCfg()
     logger = SummaryWriter(training_cfg.save_dir / training_cfg.run_id / "log")
@@ -29,7 +39,7 @@ def train():
     loss_fn = CombinedLoss.from_config(loss_cfg)
 
     if torch.cuda.is_available():
-        torch.set_float32_matmul_precision('high')
+        torch.set_float32_matmul_precision("high")
         model.compile()
         loss_fn.compile()
 

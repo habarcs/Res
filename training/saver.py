@@ -31,11 +31,12 @@ def load_state(
     model: torch.nn.Module,
     ema_model: torch.nn.Module | None,
 ) -> bool:
-    checkpoint = torch.load(file, weights_only=False)
+    checkpoint = torch.load(file, weights_only=True)
     ema_model_loaded = False
     assert "model" in checkpoint
     model.load_state_dict(checkpoint["model"])
     if ema_model and "ema_model" in checkpoint:
         ema_model.load_state_dict(checkpoint["ema_model"])
         ema_model_loaded = True
+    print(f"Starting with a model of validation loss {checkpoint['loss']}")
     return ema_model_loaded

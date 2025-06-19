@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime
-from typing import Sequence
+from collections.abc import Sequence
 
 
 @dataclass
@@ -65,7 +65,7 @@ class ModelCfg:
 class LossCfg:
     perceptual_model_path: Path = Path("")
     perceptual_coef: float = 0.1
-    perceptual_loss_weights: Sequence[float] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0) 
+    perceptual_loss_weights: Sequence[float] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 
 
 @dataclass

@@ -27,9 +27,10 @@ class ClsModel(torch.nn.Module):
 
     @classmethod
     def from_weights(cls, path: Path | str) -> Self:
-        state = torch.load(path, weights_only=False)
+        state = torch.load(path, weights_only=True)
         model = cls(state["num_classes"])
         model.load_state_dict(state["weights"])
+        print(f"Starting with a model of validation accuracy {state['acc']}")
         return model
 
 
@@ -120,7 +121,7 @@ def _save_model(
     path.mkdir(parents=True, exist_ok=True)
     file = path / f"{epoch_id:03d}_classifier_{acc:06.2f}.pth"
     state = {
-        "weights": model.state_dict,
+        "weights": model.state_dict(),
         "num_classes": model.num_classes,
         "acc": float,
     }
