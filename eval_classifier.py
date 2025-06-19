@@ -5,7 +5,7 @@ import config
 
 def get_model_path() -> str:
     parser = argparse.ArgumentParser()
-    parser.add_argument("model_path", required=True)
+    parser.add_argument("model_path")
     return parser.parse_args().model_path
 
 

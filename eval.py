@@ -13,7 +13,7 @@ from upscaler.smp_model import SmpModel
 
 def get_args() -> tuple[str, bool]:
     parser = argparse.ArgumentParser()
-    parser.add_argument("model_path", required=True)
+    parser.add_argument("model_path")
     parser.add_argument("--no-ema", action="store_false")
     args = parser.parse_args()
     return args.model_path, args.no_ema
