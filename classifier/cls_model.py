@@ -28,37 +28,48 @@ class ClsModel(torch.nn.Module):
     def forward(self, image: torch.Tensor) -> torch.Tensor:
         return self.backbone(image)
 
-    @classmethod
-    def from_weights(cls, path: Path | str, load_ema_if_present: bool = True) -> Self:
-        state = torch.load(path, weights_only=True)
-        model = cls(state["num_classes"])
-        if load_ema_if_present and "ema_model" in state:
-            model.load_state_dict(state["ema_model"])
-        else:
-            model.load_state_dict(state["model"])
-        print(f"Starting with a model of validation accuracy {state['acc']}")
-        return model
+
+def load_model(
+    model: ClsModel, ema_model: AveragedModel | None, path: Path | str
+) -> bool:
+    state = torch.load(path, weights_only=True)
+    ema_model_loaded = False
+    if ema_model and "ema_model" in state:
+        ema_model.load_state_dict(state["ema_model"])
+        ema_model_loaded = True
+    model.load_state_dict(state["model"])
+    print(f"Starting with a model of validation accuracy {state['acc']}")
+    return ema_model_loaded
 
 
 def eval_model(
     fine_tune_cfg: config.ClassifierFineTuneCfg,
     data_cfg: config.ClassifierDataCfg,
+    ema_cfg: config.EMAModelCfg,
     model_path: str,
     no_ema: bool,
 ):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(2025)
 
-    _, _, test_loader, _ = classfication_data_loader_from_config(data_cfg)
-    model = ClsModel.from_weights(model_path, not no_ema).to(device)
+    _, _, test_loader, classes = classfication_data_loader_from_config(data_cfg)
+    model = ClsModel(len(classes))
+    ema_model = ema_model_from_config(model, ema_cfg)
+    ema_model_loaded = load_model(model, ema_model, model_path)
+    if ema_model and ema_model_loaded and not no_ema:
+        eval_model = ema_model.to(device)
+        print("Using EMA model")
+    else:
+        eval_model = model.to(device)
+        print("Using non EMA model")
 
     if fine_tune_cfg.compile and torch.cuda.is_available():
         torch.set_float32_matmul_precision("high")
-        model.compile()
+        eval_model.compile()
 
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    acc = _test_step(test_loader, Mock(), device, model, loss_fn)
+    acc = _test_step(test_loader, Mock(), device, eval_model, loss_fn)
     print(f"Final test accuracy: {acc}")
 
 

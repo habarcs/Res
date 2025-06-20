@@ -15,7 +15,7 @@ from upscaler.smp_model import SmpModel
 def get_args() -> tuple[str, bool]:
     parser = argparse.ArgumentParser()
     parser.add_argument("model_path")
-    parser.add_argument("--no-ema", action="store_false")
+    parser.add_argument("--no-ema", action="store_true")
     args = parser.parse_args()
     return args.model_path, args.no_ema
 
@@ -40,11 +40,12 @@ def evaluate_model(model_path: str, no_ema: bool = False):
 
     combined_loss = CombinedLoss.from_config(loss_cfg)
 
-    eval_model = (
-        ema_model.to(device)
-        if not no_ema and ema_model and ema_model_loaded
-        else model.to(device)
-    )
+    if not no_ema and ema_model and ema_model_loaded:
+        eval_model = ema_model.to(device)
+        print("Using EMA model")
+    else:
+        eval_model = model.to(device)
+        print("Using non EMA model")
 
     if training_cfg.compile and torch.cuda.is_available():
         torch.set_float32_matmul_precision("high")

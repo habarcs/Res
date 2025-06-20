@@ -6,7 +6,7 @@ import config
 def get_args() -> tuple[str, bool]:
     parser = argparse.ArgumentParser()
     parser.add_argument("model_path")
-    parser.add_argument("--no-ema", action="store_false")
+    parser.add_argument("--no-ema", action="store_true")
     args = parser.parse_args()
     return args.model_path, args.no_ema
 
@@ -14,5 +14,6 @@ def get_args() -> tuple[str, bool]:
 if __name__ == "__main__":
     fine_tune_cfg = config.ClassifierFineTuneCfg()
     data_cfg = config.ClassifierDataCfg()
+    ema_cfg = config.EMAModelCfg()
     model_path, no_ema = get_args()
-    eval_model(fine_tune_cfg, data_cfg, model_path, no_ema)
+    eval_model(fine_tune_cfg, data_cfg, ema_cfg, model_path, no_ema)
