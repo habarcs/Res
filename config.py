@@ -27,6 +27,7 @@ class TrainingCfg:
     save_dir: Path = Path("out")
     lr_start: float = 5e-5
     lr_end: float = 2e-5
+    compile: bool = True
 
 
 @dataclass
@@ -70,6 +71,7 @@ class ModelCfg:
 @dataclass
 class LossCfg:
     perceptual_model_path: Path = Path("")
+    use_ema: bool = True
     perceptual_coef: float = 0.1
     perceptual_loss_weights: Sequence[float] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 
@@ -96,3 +98,4 @@ class ClassifierFineTuneCfg:
     ending_lr: float = 1e-8
     run_id: str = "cls_" + datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("out")
+    compile: bool = True

@@ -32,16 +32,18 @@ def train():
     torch.manual_seed(2025)
 
     train_loader, val_loader, _ = data_loader_from_config(data_cfg)
-    model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg)
-    ema_model = ema_model_from_config(model, ema_cfg)
+    model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg).to(device)
+    ema_model = ema_model_from_config(model, ema_cfg, device)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
-    loss_fn = CombinedLoss.from_config(loss_cfg)
+    combined_loss = CombinedLoss.from_config(loss_cfg)
 
-    if torch.cuda.is_available():
+    if training_cfg.compile and torch.cuda.is_available():
         torch.set_float32_matmul_precision("high")
         model.compile()
-        loss_fn.compile()
+        if ema_model:
+            ema_model.compile()
+        combined_loss.compile()
 
     optimizer = torch.optim.Adam(model.parameters(), training_cfg.lr_start)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -59,7 +61,7 @@ def train():
         val_loader,
         model,
         ema_model,
-        loss_fn,
+        combined_loss,
         optimizer,
         scheduler,
     )

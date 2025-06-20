@@ -1,14 +1,17 @@
 from unittest.mock import Mock
 from pathlib import Path
-from typing import Self
+from typing import Self, Sized
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.swa_utils import AveragedModel
+from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torch
 from datapipe.dataloader import classfication_data_loader_from_config
 
 import config
+from upscaler.ema_model import ema_model_from_config
 
 
 class ClsModel(torch.nn.Module):
@@ -26,11 +29,13 @@ class ClsModel(torch.nn.Module):
         return self.backbone(image)
 
     @classmethod
-    def from_weights(cls, path: Path | str) -> Self:
-        torch.serialization.add_safe_globals([float])
+    def from_weights(cls, path: Path | str, load_ema_if_present: bool = True) -> Self:
         state = torch.load(path, weights_only=True)
         model = cls(state["num_classes"])
-        model.load_state_dict(state["weights"])
+        if load_ema_if_present and "ema_model" in state:
+            model.load_state_dict(state["ema_model"])
+        else:
+            model.load_state_dict(state["model"])
         print(f"Starting with a model of validation accuracy {state['acc']}")
         return model
 
@@ -39,10 +44,18 @@ def eval_model(
     fine_tune_cfg: config.ClassifierFineTuneCfg,
     data_cfg: config.ClassifierDataCfg,
     model_path: str,
+    no_ema: bool,
 ):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    torch.manual_seed(2025)
+
     _, _, test_loader, _ = classfication_data_loader_from_config(data_cfg)
-    model = ClsModel.from_weights(model_path).to(device)
+    model = ClsModel.from_weights(model_path, not no_ema).to(device)
+
+    if fine_tune_cfg.compile and torch.cuda.is_available():
+        torch.set_float32_matmul_precision("high")
+        model.compile()
+
     loss_fn = torch.nn.CrossEntropyLoss()
 
     acc = _test_step(test_loader, Mock(), device, model, loss_fn)
@@ -50,17 +63,28 @@ def eval_model(
 
 
 def fine_tune(
-    fine_tune_cfg: config.ClassifierFineTuneCfg, data_cfg: config.ClassifierDataCfg
+    fine_tune_cfg: config.ClassifierFineTuneCfg,
+    data_cfg: config.ClassifierDataCfg,
+    ema_cfg: config.EMAModelCfg,
 ):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    torch.manual_seed(2025)
+
     logger = SummaryWriter(fine_tune_cfg.save_dir / fine_tune_cfg.run_id / "log")
+
     train_loader, val_loader, _, classes = classfication_data_loader_from_config(
         data_cfg
     )
+
     model = ClsModel(len(classes)).to(device)
-    if torch.cuda.is_available():
+    ema_model = ema_model_from_config(model, ema_cfg, device)
+
+    if fine_tune_cfg.compile and torch.cuda.is_available():
         torch.set_float32_matmul_precision("high")
         model.compile()
+        if ema_model:
+            ema_model.compile()
+
     optimizer = AdamW(model.parameters(), lr=fine_tune_cfg.starting_lr)
     scheduler = CosineAnnealingLR(
         optimizer, T_max=fine_tune_cfg.epochs, eta_min=fine_tune_cfg.ending_lr
@@ -69,15 +93,26 @@ def fine_tune(
 
     for epoch in range(fine_tune_cfg.epochs):
         print(f"Epoch {epoch + 1}/{fine_tune_cfg.epochs}")
-        _train_step(train_loader, logger, device, model, loss_fn, optimizer)
-        acc = _test_step(val_loader, logger, device, model, loss_fn, epoch=epoch)
-        _save_model(model, fine_tune_cfg, epoch + 1, acc)
+        _train_step(train_loader, logger, device, model, ema_model, loss_fn, optimizer)
+        val_model = ema_model if ema_model else model
+        acc = _test_step(val_loader, logger, device, val_model, loss_fn, epoch=epoch)
+        _save_model(model, ema_model, fine_tune_cfg, epoch + 1, acc)
         scheduler.step()
 
 
-def _train_step(train_loader, logger, device, model, loss_fn, optimizer):
+def _train_step(
+    train_loader: DataLoader,
+    logger: SummaryWriter,
+    device: torch.device,
+    model: ClsModel,
+    ema_model: AveragedModel | None,
+    loss_fn: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+):
     model.train()
+    assert isinstance(train_loader.dataset, Sized)
     dataset_size = len(train_loader.dataset)
+    assert train_loader.batch_size
     batch_size = train_loader.batch_size
     for batch, (images, _, targets) in enumerate(train_loader):
         images, targets = images.to(device), targets.to(device)
@@ -88,6 +123,8 @@ def _train_step(train_loader, logger, device, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
+        if ema_model:
+            ema_model.update_parameters(model)
 
         current = batch * batch_size + len(images)
         print(f"Train: loss: {loss.item():>7f}  [{current:>5d}/{dataset_size:>5d}]")
@@ -95,7 +132,16 @@ def _train_step(train_loader, logger, device, model, loss_fn, optimizer):
 
 
 @torch.no_grad()
-def _test_step(dataloader, logger, device, model, loss_fn, label="Val", epoch=0):
+def _test_step(
+    dataloader: DataLoader,
+    logger: SummaryWriter,
+    device: torch.device,
+    model: torch.nn.Module,
+    loss_fn: torch.nn.Module,
+    label: str = "Val",
+    epoch: int = 0,
+):
+    assert isinstance(dataloader.dataset, Sized)
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -119,13 +165,18 @@ def _test_step(dataloader, logger, device, model, loss_fn, label="Val", epoch=0)
 
 
 def _save_model(
-    model: ClsModel, cfg: config.ClassifierFineTuneCfg, epoch_id: int, acc: float
+    model: ClsModel,
+    ema_model: AveragedModel | None,
+    cfg: config.ClassifierFineTuneCfg,
+    epoch_id: int,
+    acc: float,
 ):
     path = cfg.save_dir / cfg.run_id / "models"
     path.mkdir(parents=True, exist_ok=True)
     file = path / f"{epoch_id:03d}_classifier_{acc:06.2f}.pth"
     state = {
-        "weights": model.state_dict(),
+        "model": model.state_dict(),
+        "ema_model": ema_model.state_dict() if ema_model else None,
         "num_classes": model.num_classes,
         "acc": acc,
     }

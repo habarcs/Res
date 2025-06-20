@@ -184,3 +184,4 @@ cython_debug/
 data/
 weights/
 out/
+latent-diffusion/
