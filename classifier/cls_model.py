@@ -27,10 +27,11 @@ class ClsModel(torch.nn.Module):
 
     @classmethod
     def from_weights(cls, path: Path | str) -> Self:
+        torch.serialization.add_safe_globals([float])
         state = torch.load(path, weights_only=True)
         model = cls(state["num_classes"])
         model.load_state_dict(state["weights"])
-        print(f"Starting with a model of validation accuracy {state['acc']}")
+        print(f"Starting with a model of validation accuracy {state['acc'].item()}")
         return model
 
 
@@ -41,7 +42,7 @@ def eval_model(
 ):
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     _, _, test_loader, _ = classfication_data_loader_from_config(data_cfg)
-    model = ClsModel.from_weights(model_path)
+    model = ClsModel.from_weights(model_path).to(device)
     loss_fn = torch.nn.CrossEntropyLoss()
 
     acc = _test_step(test_loader, Mock(), device, model, loss_fn)
@@ -77,6 +78,7 @@ def fine_tune(
 def _train_step(train_loader, logger, device, model, loss_fn, optimizer):
     model.train()
     dataset_size = len(train_loader.dataset)
+    batch_size = train_loader.batch_size
     for batch, (images, _, targets) in enumerate(train_loader):
         images, targets = images.to(device), targets.to(device)
 
@@ -87,9 +89,9 @@ def _train_step(train_loader, logger, device, model, loss_fn, optimizer):
         optimizer.step()
         optimizer.zero_grad()
 
-        current = (batch + 1) * len(images)
+        current = batch * batch_size + len(images)
         print(f"Train: loss: {loss.item():>7f}  [{current:>5d}/{dataset_size:>5d}]")
-        logger.add_scalar("Train/loss", loss.item(), batch + 1)
+        logger.add_scalar("Train/loss", loss.item(), current)
 
 
 @torch.no_grad()
