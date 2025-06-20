@@ -31,7 +31,7 @@ class ClsModel(torch.nn.Module):
         state = torch.load(path, weights_only=True)
         model = cls(state["num_classes"])
         model.load_state_dict(state["weights"])
-        print(f"Starting with a model of validation accuracy {state['acc'].item()}")
+        print(f"Starting with a model of validation accuracy {state['acc']}")
         return model
 
 
@@ -127,6 +127,6 @@ def _save_model(
     state = {
         "weights": model.state_dict(),
         "num_classes": model.num_classes,
-        "acc": float,
+        "acc": acc,
     }
     torch.save(state, file)
