@@ -32,6 +32,8 @@ def evaluate_model(model_path: str, no_ema: bool):
     _, _, test_loader, classes = data_loader_from_config(data_cfg)
     model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg)
     load_state(model_path, model, not no_ema)
+    model.to(device)
+
     diffusor = Diffusion.from_config(diffusion_cfg)
 
     combined_loss = CombinedLoss.from_config(loss_cfg, len(classes))

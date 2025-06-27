@@ -20,6 +20,7 @@ def eval_model(
     _, _, test_loader, classes = classfication_data_loader_from_config(data_cfg)
     model = ClsModel(len(classes))
     load_model(model, model_path, not no_ema)
+    model.to(device)
 
     if fine_tune_cfg.compile:
         torch.set_float32_matmul_precision("high")
