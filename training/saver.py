@@ -1,4 +1,5 @@
 from pathlib import Path
+from collections import OrderedDict
 import torch
 
 import config
@@ -34,7 +35,12 @@ def load_state(
     checkpoint = torch.load(file, weights_only=True)
     assert "model" in checkpoint
     if "ema_model" in checkpoint and load_ema:
-        model.load_state_dict(checkpoint["ema_model"]["module"])
+        weights = OrderedDict(
+            (key.removeprefix("module."), value)
+            for key, value in checkpoint["ema_model"].items()
+            if key.startswith("module.")
+        )
+        model.load_state_dict(weights)
         print("Ema model loaded")
     else:
         model.load_state_dict(checkpoint["model"])

@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torch
+from collections import OrderedDict
 
 import config
 
@@ -110,7 +111,12 @@ def save_model(
 def load_model(model: ClsModel, path: Path | str, load_ema: bool) -> None:
     state = torch.load(path, weights_only=True)
     if "ema_model" in state and load_ema:
-        model.load_state_dict(state["ema_model"]["module"])
+        weights = OrderedDict(
+            (key.removeprefix("module."), value)
+            for key, value in state["ema_model"].items()
+            if key.startswith("module.")
+        )
+        model.load_state_dict(weights)
         print("Loaded EMA model")
     else:
         model.load_state_dict(state["model"])
