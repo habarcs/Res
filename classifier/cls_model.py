@@ -110,7 +110,7 @@ def save_model(
 def load_model(model: ClsModel, path: Path | str, load_ema: bool) -> None:
     state = torch.load(path, weights_only=True)
     if "ema_model" in state and load_ema:
-        model.load_state_dict(state["ema_model"])
+        model.load_state_dict(state["ema_model"]["module"])
         print("Loaded EMA model")
     else:
         model.load_state_dict(state["model"])

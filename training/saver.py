@@ -34,7 +34,7 @@ def load_state(
     checkpoint = torch.load(file, weights_only=True)
     assert "model" in checkpoint
     if "ema_model" in checkpoint and load_ema:
-        model.load_state_dict(checkpoint["ema_model"])
+        model.load_state_dict(checkpoint["ema_model"]["module"])
         print("Ema model loaded")
     else:
         model.load_state_dict(checkpoint["model"])
