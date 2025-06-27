@@ -68,7 +68,7 @@ class Diffusion:
         x_t = torch.normal(lq, self.kappa * math.sqrt(eta_T))
         progress = []
 
-        for t in range(self.T, 1, -1):
+        for t in range(self.T, 1, -1):  # T, T-1, ... 3, 2
             e = torch.randn_like(x_t)
             eta_t = self.shifting_seq(t)
             eta_t_1 = self.shifting_seq(t - 1)
@@ -79,7 +79,7 @@ class Diffusion:
             if collect_progress and t in [self.T, 2, (self.T + 1) // 2]:
                 progress.append(x_t)
 
-        return f_theta(x_t, lq, torch.full(t_dim, t)), progress
+        return f_theta(x_t, lq, torch.full(t_dim, 1)), progress
 
     def sample_timesteps(self, batch_size) -> Tensor:
         """

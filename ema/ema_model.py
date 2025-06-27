@@ -4,7 +4,9 @@ import torch
 
 
 def ema_model_from_config(
-    model: torch.nn.Module, cfg: config.EMACfg, device: torch.device | None = None
+    model: torch.nn.Module,
+    cfg: config.EMACfg | config.ClassifierEMACfg,
+    device: torch.device | None = None,
 ) -> AveragedModel | None:
     if cfg.enabled:
         ema_model = AveragedModel(

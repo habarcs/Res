@@ -1,4 +1,5 @@
 from typing import Self
+from classifier.cls_model import ClsModel
 import config
 import torch
 from loss.perceptual_loss import PerceptualLoss
@@ -20,6 +21,8 @@ class CombinedLoss(torch.nn.Module):
         return combined, percep.item(), mse.item()
 
     @classmethod
-    def from_config(cls, cfg: config.LossCfg) -> Self:
-        p_loss = PerceptualLoss.from_config(cfg)
+    def from_config(cls, cfg: config.LossCfg, num_classes: int) -> Self:
+        classifier = ClsModel(num_classes)
+
+        p_loss = PerceptualLoss(classifier, cfg.perceptual_loss_weights)
         return cls(cfg.perceptual_coef, p_loss)

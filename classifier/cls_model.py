@@ -1,17 +1,12 @@
-from unittest.mock import Mock
 from pathlib import Path
-from typing import Self, Sized
-from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from typing import Sized
 from torch.optim.swa_utils import AveragedModel
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torchvision
 import torch
-from datapipe.dataloader import classfication_data_loader_from_config
 
 import config
-from upscaler.ema_model import ema_model_from_config
 
 
 class ClsModel(torch.nn.Module):
@@ -29,89 +24,7 @@ class ClsModel(torch.nn.Module):
         return self.backbone(image)
 
 
-def load_model(
-    model: ClsModel, ema_model: AveragedModel | None, path: Path | str
-) -> bool:
-    state = torch.load(path, weights_only=True)
-    ema_model_loaded = False
-    if ema_model and "ema_model" in state:
-        ema_model.load_state_dict(state["ema_model"])
-        ema_model_loaded = True
-    model.load_state_dict(state["model"])
-    print(f"Starting with a model of validation accuracy {state['acc']}")
-    return ema_model_loaded
-
-
-def eval_model(
-    fine_tune_cfg: config.ClassifierFineTuneCfg,
-    data_cfg: config.ClassifierDataCfg,
-    ema_cfg: config.EMAModelCfg,
-    model_path: str,
-    no_ema: bool,
-):
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    torch.manual_seed(2025)
-
-    _, _, test_loader, classes = classfication_data_loader_from_config(data_cfg)
-    model = ClsModel(len(classes))
-    ema_model = ema_model_from_config(model, ema_cfg)
-    ema_model_loaded = load_model(model, ema_model, model_path)
-    if ema_model and ema_model_loaded and not no_ema:
-        eval_model = ema_model.to(device)
-        print("Using EMA model")
-    else:
-        eval_model = model.to(device)
-        print("Using non EMA model")
-
-    if fine_tune_cfg.compile and torch.cuda.is_available():
-        torch.set_float32_matmul_precision("high")
-        eval_model.compile()
-
-    loss_fn = torch.nn.CrossEntropyLoss()
-
-    acc = _test_step(test_loader, Mock(), device, eval_model, loss_fn)
-    print(f"Final test accuracy: {acc}")
-
-
-def fine_tune(
-    fine_tune_cfg: config.ClassifierFineTuneCfg,
-    data_cfg: config.ClassifierDataCfg,
-    ema_cfg: config.EMAModelCfg,
-):
-    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-    torch.manual_seed(2025)
-
-    logger = SummaryWriter(fine_tune_cfg.save_dir / fine_tune_cfg.run_id / "log")
-
-    train_loader, val_loader, _, classes = classfication_data_loader_from_config(
-        data_cfg
-    )
-
-    model = ClsModel(len(classes)).to(device)
-    ema_model = ema_model_from_config(model, ema_cfg, device)
-
-    if fine_tune_cfg.compile and torch.cuda.is_available():
-        torch.set_float32_matmul_precision("high")
-        model.compile()
-        if ema_model:
-            ema_model.compile()
-
-    optimizer = AdamW(model.parameters(), lr=fine_tune_cfg.starting_lr)
-    scheduler = CosineAnnealingLR(
-        optimizer, T_max=fine_tune_cfg.epochs, eta_min=fine_tune_cfg.ending_lr
-    )
-    loss_fn = torch.nn.CrossEntropyLoss()
-
-    for epoch in range(fine_tune_cfg.epochs):
-        print(f"Epoch {epoch + 1}/{fine_tune_cfg.epochs}")
-        _train_step(train_loader, logger, device, model, ema_model, loss_fn, optimizer)
-        val_model = ema_model if ema_model else model
-        acc = _test_step(val_loader, logger, device, val_model, loss_fn, epoch=epoch)
-        _save_model(model, ema_model, fine_tune_cfg, epoch + 1, acc)
-        scheduler.step()
-
-
-def _train_step(
+def train_step(
     train_loader: DataLoader,
     logger: SummaryWriter,
     device: torch.device,
@@ -125,7 +38,7 @@ def _train_step(
     dataset_size = len(train_loader.dataset)
     assert train_loader.batch_size
     batch_size = train_loader.batch_size
-    for batch, (images, _, targets) in enumerate(train_loader):
+    for batch, (images, targets) in enumerate(train_loader):
         images, targets = images.to(device), targets.to(device)
 
         preds = model(images)
@@ -143,7 +56,7 @@ def _train_step(
 
 
 @torch.no_grad()
-def _test_step(
+def test_step(
     dataloader: DataLoader,
     logger: SummaryWriter,
     device: torch.device,
@@ -158,7 +71,7 @@ def _test_step(
     model.eval()
     test_loss, correct = 0.0, 0
 
-    for images, _, targets in dataloader:
+    for images, targets in dataloader:
         images, targets = images.to(device), targets.to(device)
         preds = model(images)
         test_loss += loss_fn(preds, targets).item()
@@ -175,7 +88,7 @@ def _test_step(
     return acc
 
 
-def _save_model(
+def save_model(
     model: ClsModel,
     ema_model: AveragedModel | None,
     cfg: config.ClassifierFineTuneCfg,
@@ -192,3 +105,14 @@ def _save_model(
         "acc": acc,
     }
     torch.save(state, file)
+
+
+def load_model(model: ClsModel, path: Path | str, load_ema: bool) -> None:
+    state = torch.load(path, weights_only=True)
+    if "ema_model" in state and load_ema:
+        model.load_state_dict(state["ema_model"])
+        print("Loaded EMA model")
+    else:
+        model.load_state_dict(state["model"])
+        print("Loaded model")
+    print(f"Starting with a model of validation accuracy {state['acc']}")

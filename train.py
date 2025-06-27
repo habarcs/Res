@@ -24,21 +24,21 @@ def train():
     run_id = get_optional_run_id()
     if run_id:
         training_cfg.run_id = run_id
-    ema_cfg = config.EMAModelCfg()
+    ema_cfg = config.EMACfg()
     loss_cfg = config.LossCfg()
     logger = SummaryWriter(training_cfg.save_dir / training_cfg.run_id / "log")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(2025)
 
-    train_loader, val_loader, _ = data_loader_from_config(data_cfg)
+    train_loader, val_loader, _, classes = data_loader_from_config(data_cfg)
     model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg).to(device)
     ema_model = ema_model_from_config(model, ema_cfg, device)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
-    combined_loss = CombinedLoss.from_config(loss_cfg)
+    combined_loss = CombinedLoss.from_config(loss_cfg, len(classes))
 
-    if training_cfg.compile and torch.cuda.is_available():
+    if training_cfg.compile:
         torch.set_float32_matmul_precision("high")
         model.compile()
         if ema_model:

@@ -5,7 +5,7 @@ from collections.abc import Sequence
 
 
 @dataclass
-class EMAModelCfg:
+class EMACfg:
     enabled: bool = True
     decay: float = 0.999
 
@@ -27,7 +27,7 @@ class TrainingCfg:
     save_dir: Path = Path("out")
     lr_start: float = 5e-5
     lr_end: float = 2e-5
-    compile: bool = True
+    compile: bool = False
 
 
 @dataclass
@@ -98,4 +98,10 @@ class ClassifierFineTuneCfg:
     ending_lr: float = 1e-8
     run_id: str = "cls_" + datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("out")
-    compile: bool = True
+    compile: bool = False
+
+
+@dataclass
+class ClassifierEMACfg:
+    enabled: bool = True
+    decay: float = 0.999

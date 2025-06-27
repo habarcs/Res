@@ -10,7 +10,7 @@ def save_state(
     test_loss: float,
     model: torch.nn.Module,
     ema_model: torch.nn.Module | None,
-):
+) -> None:
     path = cfg.save_dir / cfg.run_id / "models"
     path.mkdir(parents=True, exist_ok=True)
     formatted_loss = f"{test_loss:.2e}"
@@ -29,14 +29,14 @@ def save_state(
 def load_state(
     file: Path | str,
     model: torch.nn.Module,
-    ema_model: torch.nn.Module | None,
-) -> bool:
+    load_ema: bool,
+) -> None:
     checkpoint = torch.load(file, weights_only=True)
-    ema_model_loaded = False
     assert "model" in checkpoint
-    model.load_state_dict(checkpoint["model"])
-    if ema_model and "ema_model" in checkpoint:
-        ema_model.load_state_dict(checkpoint["ema_model"])
-        ema_model_loaded = True
+    if "ema_model" in checkpoint and load_ema:
+        model.load_state_dict(checkpoint["ema_model"])
+        print("Ema model loaded")
+    else:
+        model.load_state_dict(checkpoint["model"])
+        print("Model loaded")
     print(f"Starting with a model of validation loss {checkpoint['loss']}")
-    return ema_model_loaded

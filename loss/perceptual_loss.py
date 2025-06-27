@@ -1,10 +1,10 @@
-from typing import Self, Sequence
-import torch
-from classifier.cls_model import ClsModel
-from torchvision.models.feature_extraction import create_feature_extractor
-from torch.nn import MSELoss
+from typing import Sequence
 
-import config
+import torch
+from torch.nn import MSELoss
+from torchvision.models.feature_extraction import create_feature_extractor
+
+from classifier.cls_model import ClsModel
 
 
 class PerceptualLoss(torch.nn.Module):
@@ -33,8 +33,3 @@ class PerceptualLoss(torch.nn.Module):
         ):
             loss += weight * self.mse_loss(hq_f, gt_f)
         return loss
-
-    @classmethod
-    def from_config(cls, cfg: config.LossCfg) -> Self:
-        classifier = ClsModel.from_weights(cfg.perceptual_model_path, cfg.use_ema)
-        return cls(classifier, cfg.perceptual_loss_weights)

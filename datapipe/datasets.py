@@ -10,7 +10,6 @@ class DiffusionDataset(ImageFolder):
         root: Union[str, Path],
         lq_transform: Optional[Callable] = None,
         hq_transform: Optional[Callable] = None,
-        target_transform: Optional[Callable] = None,
         loader: Callable[[str], Any] = default_loader,
         is_valid_file: Optional[Callable[[str], bool]] = None,
         allow_empty: bool = False,
@@ -18,7 +17,7 @@ class DiffusionDataset(ImageFolder):
         super().__init__(
             root,
             None,
-            target_transform,
+            None,
             loader,
             is_valid_file,
             allow_empty,
@@ -26,14 +25,7 @@ class DiffusionDataset(ImageFolder):
         self.lq_transform = lq_transform
         self.hq_transform = hq_transform
 
-    def __getitem__(self, index: int) -> Tuple[Any, Any, Any]:
-        """
-        Args:
-            index (int): Index
-
-        Returns:
-            tuple: (hq_image, lq_image, class)
-        """
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
         path, target = self.imgs[index]
         sample = self.loader(path)
         if self.hq_transform is not None:
@@ -44,7 +36,5 @@ class DiffusionDataset(ImageFolder):
             lq = self.lq_transform(sample)
         else:
             lq = sample
-        if self.target_transform is not None:
-            target = self.target_transform(target)
 
-        return hq, lq, target
+        return hq, lq
