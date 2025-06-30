@@ -36,13 +36,15 @@ class SmpModel(torch.nn.Module):
 
         self.t_embedding = torch.nn.Embedding(T, t_embedding_dim)
 
-        self.timestep_encoder_projections = [
-            torch.nn.Sequential(
-                torch.nn.Linear(t_embedding_dim, dim),
-                torch.nn.SiLU(),
-            )
-            for dim in self.encoder_out_channels
-        ]
+        self.timestep_encoder_projections = torch.nn.ModuleList(
+            [
+                torch.nn.Sequential(
+                    torch.nn.Linear(t_embedding_dim, dim),
+                    torch.nn.SiLU(),
+                )
+                for dim in self.encoder_out_channels
+            ]
+        )
 
     def forward(
         self, x_t: torch.Tensor, lq: torch.Tensor, t: torch.Tensor
