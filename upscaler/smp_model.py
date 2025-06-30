@@ -63,7 +63,9 @@ class SmpModel(torch.nn.Module):
         features = self.encoder(x)
         time_embedded_features = [
             out + t_encoder(t_embedded).unsqueeze(2).unsqueeze(3)
-            for out, t_encoder in zip(features, self.timestep_encoder_projections)
+            for out, t_encoder in zip(
+                features, self.timestep_encoder_projections, strict=True
+            )
         ]
 
         decoder_output = self.decoder(time_embedded_features)
