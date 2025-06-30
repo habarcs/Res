@@ -22,6 +22,9 @@ class ClsModel(torch.nn.Module):
         self.num_layers = len(self.backbone.features)
 
     def forward(self, image: torch.Tensor) -> torch.Tensor:
+        # check if the image has 3 channels, if not it is grayscale
+        if image.shape[1] != 3:
+            image = image.expand(-1, 3, -1, -1)
         return self.backbone(image)
 
 
