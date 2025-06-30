@@ -92,6 +92,6 @@ class Diffusion:
         Helper function that allows shifting seq to also be used on tensors
         """
         # type manipulation is needed, because map only works on tensors of the same type, t is ints but the shifting seq is floats
-        return torch.zeros_like(t, dtype=torch.float).map_(
+        return torch.zeros(t.size(), dtype=torch.float).map_(
             t.float(), lambda _, x: self.shifting_seq(int(x))
-        )
+        ).to(t.device)
