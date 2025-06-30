@@ -7,6 +7,7 @@ from loss.perceptual_loss import PerceptualLoss
 
 class CombinedLoss(torch.nn.Module):
     def __init__(self, lambda_coef: float, perceptual_loss: torch.nn.Module) -> None:
+        super().__init__()
         self.perceptual_loss = perceptual_loss
         self.lambda_coef = lambda_coef
         self.mse_loss = torch.nn.MSELoss()
