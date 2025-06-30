@@ -17,7 +17,7 @@ class PerceptualLoss(torch.nn.Module):
         for param in classifier.parameters():
             param.requires_grad = False
         return_nodes = {
-            f"features.{i}": f"features.{i}" for i in range(self.classifier.num_layers)
+            f"backbone.features.{i}": f"features.{i}" for i in range(self.classifier.num_layers)
         }
         self.extractor = create_feature_extractor(self.classifier, return_nodes)
         self.mse_loss = MSELoss()
