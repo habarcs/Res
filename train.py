@@ -36,7 +36,7 @@ def train():
     ema_model = ema_model_from_config(model, ema_cfg, device)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
-    combined_loss = CombinedLoss.from_config(loss_cfg, len(classes))
+    combined_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
 
     if training_cfg.compile:
         torch.set_float32_matmul_precision("high")

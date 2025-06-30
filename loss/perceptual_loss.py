@@ -25,6 +25,11 @@ class PerceptualLoss(torch.nn.Module):
 
     def forward(self, hq: torch.Tensor, gt: torch.Tensor) -> float:
         assert hq.shape == gt.shape
+        # check if the images have 3 channels, if not it is grayscale
+        if hq.shape[1] != 3:
+            hq = hq.expand(-1, 3, -1, -1)
+            gt = gt.expand(-1, 3, -1, -1)
+
         loss = 0.0
         hq_features = self.extractor(hq)
         gt_features = self.extractor(gt)

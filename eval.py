@@ -36,7 +36,7 @@ def evaluate_model(model_path: str, no_ema: bool):
 
     diffusor = Diffusion.from_config(diffusion_cfg)
 
-    combined_loss = CombinedLoss.from_config(loss_cfg, len(classes))
+    combined_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
 
     if training_cfg.compile:
         torch.set_float32_matmul_precision("high")
