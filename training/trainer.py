@@ -89,7 +89,7 @@ def eval_loop(
         test_loss += loss.item()
         for i in range(len(lq)):
             image_id = batch_size * batch + i
-            images = [lq[i] + [p[i] for p in progress] + pred[i] + hq[i]]
+            images = [lq[i]] + [p[i] for p in progress] + [pred[i]] + [hq[i]]
             logger.add_images(f"{split}/{image_id}", torch.stack(images), iteration + 1)
         print(f"{split} {batch + 1} loss: {loss}")
 
