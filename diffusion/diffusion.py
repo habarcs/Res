@@ -79,7 +79,7 @@ class Diffusion:
             if collect_progress and t in [self.T, 2, (self.T + 1) // 2]:
                 progress.append(x_t)
 
-        return f_theta(x_t, lq, torch.full(t_dim, 1)), progress
+        return f_theta(x_t, lq, torch.full(t_dim, 1, device=lq.device)), progress
 
     def sample_timesteps(self, batch_size) -> Tensor:
         """
