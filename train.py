@@ -33,7 +33,7 @@ def train():
 
     train_loader, val_loader, _, classes = data_loader_from_config(data_cfg)
     model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg).to(device)
-    ema_model = ema_model_from_config(model, ema_cfg, device)
+    ema_model = ema_model_from_config(model, ema_cfg, device).to(device)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
     combined_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
