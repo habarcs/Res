@@ -30,7 +30,7 @@ def train_loop(
         hq, lq = next(train_iterator)
         lq, hq = lq.to(device), hq.to(device)
         t = diffusor.sample_timesteps(lq.shape[0]).to(device)
-        x_t = diffusor.forward_process(lq, hq, t)
+        x_t = diffusor.forward_process(lq, hq, t, device)
         pred = model(x_t, lq, t)
         loss, mse, percep = loss_fn(pred, hq)
 
@@ -84,7 +84,7 @@ def eval_loop(
     model.eval()
     for batch, (hq, lq) in enumerate(dataloader):
         lq, hq = lq.to(device), hq.to(device)
-        pred, progress = diffusor.reverse_process(lq, model, True)
+        pred, progress = diffusor.reverse_process(lq, model, True, device)
         loss, _, _ = loss_fn(pred, hq)
         test_loss += loss.item()
         for i in range(len(lq)):
