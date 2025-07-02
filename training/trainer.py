@@ -61,7 +61,7 @@ def train_loop(
                 val_model,
                 loss_fn,
             )
-            save_state(cfg, str(iteration + 1), val_loss, model, ema_model)
+            save_state(cfg, iteration + 1, val_loss, model, ema_model)
 
 
 @torch.no_grad()

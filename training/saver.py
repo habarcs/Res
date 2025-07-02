@@ -7,7 +7,7 @@ import config
 
 def save_state(
     cfg: config.TrainingCfg,
-    batch_id: str,
+    batch_id: int,
     test_loss: float,
     model: torch.nn.Module,
     ema_model: torch.nn.Module | None,
