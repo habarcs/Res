@@ -72,7 +72,7 @@ class ModelCfg:
 class LossCfg:
     perceptual_model_path: Path = Path("")
     use_ema: bool = True
-    perceptual_coef: float = 0.1
+    perceptual_coef: float = 0.05
     perceptual_loss_weights: Sequence[float] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
 
 
