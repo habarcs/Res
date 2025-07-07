@@ -14,7 +14,7 @@ class EMACfg:
 class DiffusionCfg:
     p: float = 0.3
     T: int = 15
-    kappa: float = 2.0
+    kappa: float = 1.0
 
 
 @dataclass
