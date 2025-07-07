@@ -1,4 +1,5 @@
 import argparse
+import shutil
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -26,6 +27,7 @@ def fine_tune(
     torch.manual_seed(2025)
 
     logger = SummaryWriter(fine_tune_cfg.save_dir / fine_tune_cfg.run_id / "log")
+    shutil.copy(config.__file__, fine_tune_cfg.save_dir / fine_tune_cfg.run_id / "used_config.py")
 
     train_loader, val_loader, _, classes = classfication_data_loader_from_config(
         data_cfg

@@ -1,13 +1,16 @@
 import argparse
+import shutil
+
+import torch
+from torch.utils.tensorboard import SummaryWriter
+
+import config
 from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
-import torch
-import config
+from loss.combined_loss import CombinedLoss
+from training.trainer import train_loop
 from upscaler.ema_model import ema_model_from_config
 from upscaler.smp_model import SmpModel
-from training.trainer import train_loop
-from torch.utils.tensorboard import SummaryWriter
-from loss.combined_loss import CombinedLoss
 
 
 def get_optional_run_id() -> str | None:
@@ -27,6 +30,7 @@ def train():
     ema_cfg = config.EMACfg()
     loss_cfg = config.LossCfg()
     logger = SummaryWriter(training_cfg.save_dir / training_cfg.run_id / "log")
+    shutil.copy(config.__file__, training_cfg.save_dir / training_cfg.run_id / "used_config.py")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(2025)
