@@ -21,8 +21,8 @@ class DiffusionCfg:
 class TrainingCfg:
     # one iteration is one batch, so everything here depends on batch_size defined in datacfg
     iterations: int = 100_000
-    scheduler_freq: int = 5000
-    val_freq: int = 5000
+    scheduler_freq: int = 1000
+    val_freq: int = 10_000
     run_id: str = "diff_" + datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("out")
     lr_start: float = 5e-5
