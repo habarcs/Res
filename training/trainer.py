@@ -87,10 +87,11 @@ def eval_loop(
         pred, progress = diffusor.reverse_process(lq, model, True, device)
         loss, _, _ = loss_fn(pred, hq)
         test_loss += loss.item()
-        for i in range(len(lq)):
-            image_id = batch_size * batch + i
-            images = [lq[i]] + [p[i] for p in progress] + [pred[i]] + [hq[i]]
-            logger.add_images(f"{split}/{image_id}", torch.stack(images), iteration + 1)
+
+        image_id = batch_size * batch
+        images = [lq[0]] + [p[0] for p in progress] + [pred[0]] + [hq[0]]
+        logger.add_images(f"{split}/{image_id}", torch.stack(images), iteration + 1)
+
         print(f"{split} {batch + 1} loss: {loss}")
 
     test_loss /= num_batches
