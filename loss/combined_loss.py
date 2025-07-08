@@ -12,14 +12,27 @@ class CombinedLoss(torch.nn.Module):
         self.lambda_coef = lambda_coef
         self.mse_loss = torch.nn.MSELoss()
 
-    def forward(
-        self, hq: torch.Tensor, gt: torch.Tensor
-    ) -> tuple[torch.Tensor, float, float]:
+        self._last_mse = 0.0
+        self._last_percep = 0.0
+
+    def forward(self, hq: torch.Tensor, gt: torch.Tensor) -> torch.Tensor:
         assert hq.shape == gt.shape
         mse = self.mse_loss(hq, gt)
         percep = self.perceptual_loss(hq, gt)
         combined = mse + (self.lambda_coef * percep)
-        return combined, percep.item(), mse.item()
+
+        self._last_mse = mse.item()
+        self._last_percep = percep.item()
+
+        return combined
+
+    @property
+    def last_mse(self) -> float:
+        return self._last_mse
+
+    @property
+    def last_percep(self) -> float:
+        return self._last_percep
 
     @classmethod
     def from_config(cls, cfg: config.LossCfg, num_classes: int) -> Self:

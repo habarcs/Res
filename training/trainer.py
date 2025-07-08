@@ -32,7 +32,7 @@ def train_loop(
         t = diffusor.sample_timesteps(lq.shape[0]).to(device)
         x_t = diffusor.forward_process(lq, hq, t, device)
         pred = model(x_t, lq, t)
-        loss, mse, percep = loss_fn(pred, hq)
+        loss = loss_fn(pred, hq)
 
         loss.backward()
         optimizer.step()
@@ -42,8 +42,8 @@ def train_loop(
             ema_model.update_parameters(model)
 
         logger.add_scalar("Train/loss", loss.item(), iteration + 1)
-        logger.add_scalar("Train/mseloss", mse, iteration + 1)
-        logger.add_scalar("Train/perceploss", percep, iteration + 1)
+        logger.add_scalar("Train/mseloss", loss_fn.last_mse, iteration + 1)
+        logger.add_scalar("Train/perceploss", loss_fn.last_percep, iteration + 1)
         print(f"Train {iteration + 1} loss: {loss.item()}")
 
         if cfg.scheduler_freq and (iteration + 1) % cfg.scheduler_freq == 0:
@@ -85,7 +85,7 @@ def eval_loop(
     for batch, (hq, lq) in enumerate(dataloader):
         lq, hq = lq.to(device), hq.to(device)
         pred, progress = diffusor.reverse_process(lq, model, True, device)
-        loss, _, _ = loss_fn(pred, hq)
+        loss = loss_fn(pred, hq)
         test_loss += loss.item()
 
         image_id = batch_size * batch
