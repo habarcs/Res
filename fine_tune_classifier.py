@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR
 import config
 from classifier.cls_model import ClsModel, save_model, test_step, train_step
 from datapipe.dataloader import classfication_data_loader_from_config
-from upscaler.ema_model import ema_model_from_config
+from ema.ema_model import ema_model_from_config
 
 
 def get_optional_run_id() -> str | None:

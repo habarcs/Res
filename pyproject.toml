@@ -5,8 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "segmentation-models-pytorch>=0.5.0",
-    "tensorboard>=2.19.0",
-    "torch>=2.7.0",
-    "torchvision>=0.22.0",
+  "segmentation-models-pytorch>=0.5.0",
+  "tensorboard>=2.19.0",
+  "torch>=2.7.0",
+  "torchvision>=0.22.0",
 ]
+
+[tool.pyright]
+ignore = ["latent-diffusion/"]
+typeCheckingMode = "standard"

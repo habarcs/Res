@@ -9,7 +9,7 @@ from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
 from loss.combined_loss import CombinedLoss
 from training.trainer import train_loop
-from upscaler.ema_model import ema_model_from_config
+from ema.ema_model import ema_model_from_config
 from upscaler.smp_model import SmpModel
 
 
