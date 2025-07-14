@@ -476,7 +476,7 @@ class UNetModelSwin(nn.Module):
             conv_nd(dims, input_ch, out_channels, 3, padding=1),
         )
 
-    def forward(self, x, timesteps, lq=None, mask=None):
+    def forward(self, x, lq, timesteps, mask=None):
         """
         Apply the model to an input batch.
         :param x: an [N x C x ...] Tensor of inputs.
