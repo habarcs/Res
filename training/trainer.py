@@ -35,11 +35,11 @@ def train_loop(
         loss = loss_fn(pred, hq)
 
         loss.backward()
-        optimizer.step()
-        optimizer.zero_grad()
-
-        if ema_model:
-            ema_model.update_parameters(model)
+        if (iteration + 1) % cfg.backprop_freq == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            if ema_model:
+                ema_model.update_parameters(model)
 
         logger.add_scalar("Train/loss", loss.item(), iteration + 1)
         logger.add_scalar("Train/mseloss", loss_fn.last_mse, iteration + 1)

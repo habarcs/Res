@@ -23,6 +23,7 @@ class TrainingCfg:
     iterations: int = 100_000
     scheduler_freq: int = 1000
     val_freq: int = 10_000
+    backprop_freq: int = 1  # for gradient accumulation
     run_id: str = "diff_" + datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("out")
     lr_start: float = 5e-5
