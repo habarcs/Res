@@ -44,7 +44,7 @@ def train_loop(
         logger.add_scalar("Train/loss", loss.item(), iteration + 1)
         logger.add_scalar("Train/mseloss", loss_fn.last_mse, iteration + 1)
         logger.add_scalar("Train/perceploss", loss_fn.last_percep, iteration + 1)
-        logger.add_scalar("Train/lrrate", scheduler.get_last_lr(), iteration + 1)
+        logger.add_scalar("Train/lrrate", scheduler.get_last_lr()[0], iteration + 1)
         print(f"Train {iteration + 1} loss: {loss.item()}")
 
         if cfg.scheduler_freq and (iteration + 1) % cfg.scheduler_freq == 0:
