@@ -1,5 +1,5 @@
 import argparse
-import shutil
+from dataclasses import asdict
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -29,7 +29,9 @@ def train():
     ema_cfg = config.EMACfg()
     loss_cfg = config.LossCfg()
     logger = SummaryWriter(training_cfg.save_dir / training_cfg.run_id / "log")
-    shutil.copy(config.__file__, training_cfg.save_dir / training_cfg.run_id / "used_config.py")
+
+    for cfg in (data_cfg, diffusion_cfg, training_cfg, ema_cfg, loss_cfg):
+        logger.add_text(cfg.__class__.__name__, str(asdict(cfg)))
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(2025)
