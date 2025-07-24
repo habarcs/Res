@@ -52,7 +52,6 @@ def evaluate_model(model_path: str, run_id: str, no_ema: bool):
         combined_loss.compile()
 
     loss = eval_loop(
-        training_cfg,
         logger,
         "Test",
         0,

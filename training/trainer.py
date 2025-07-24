@@ -5,7 +5,8 @@ from torch.utils.tensorboard import SummaryWriter
 import config
 from diffusion.diffusion import Diffusion
 from torch.optim.swa_utils import AveragedModel
-
+from torch.nn.functional import l1_loss
+from piq import psnr, ssim, LPIPS, FID
 from loss.combined_loss import CombinedLoss
 from training.saver import save_state
 
@@ -52,7 +53,6 @@ def train_loop(
         if cfg.val_freq and (iteration + 1) % cfg.val_freq == 0:
             val_model = ema_model if ema_model else model
             val_loss = eval_loop(
-                cfg,
                 logger,
                 "Val",
                 iteration,
@@ -67,7 +67,6 @@ def train_loop(
 
 @torch.no_grad()
 def eval_loop(
-    cfg: config.TrainingCfg,
     logger: SummaryWriter,
     split: str,
     iteration: int,
@@ -78,16 +77,34 @@ def eval_loop(
     loss_fn: CombinedLoss,
 ) -> float:
     num_batches = len(dataloader)
-    test_loss = 0.0
+    loss_total = 0.0
+    mse_total = 0.0
+    percep_total = 0.0
+    mae_total = 0.0
+    psnr_total = 0.0
+    fid_total = 0.0
+    ssim_total = 0.0
+    lpips_total = 0.0
     batch_size = dataloader.batch_size
     assert isinstance(batch_size, int)
+
+    fid = FID()
+    lpips = LPIPS()
 
     model.eval()
     for batch, (hq, lq) in enumerate(dataloader):
         lq, hq = lq.to(device), hq.to(device)
         pred, progress = diffusor.reverse_process(lq, model, True, device)
         loss = loss_fn(pred, hq)
-        test_loss += loss.item()
+
+        loss_total += loss.item()
+        mse_total += loss.last_mse
+        percep_total += loss.last_percep
+        mae_total += l1_loss(pred, hq).item()
+        psnr_total += psnr(pred, hq).item()
+        fid_total += fid(pred, hq).item()
+        ssim_total += ssim(pred, hq)[0].item()
+        lpips_total += lpips(pred, hq).item()
 
         image_id = batch_size * batch
         images = [lq[0]] + [p[0] for p in progress] + [pred[0]] + [hq[0]]
@@ -95,6 +112,12 @@ def eval_loop(
 
         print(f"{split} {batch + 1} loss: {loss}")
 
-    test_loss /= num_batches
-    logger.add_scalar(f"{split}/avgloss", test_loss, iteration + 1)
-    return test_loss
+    logger.add_scalar(f"{split}/avg_loss", loss_total / num_batches, iteration + 1)
+    logger.add_scalar(f"{split}/avg_mse", mse_total / num_batches, iteration + 1)
+    logger.add_scalar(f"{split}/avg_percep", percep_total / num_batches, iteration + 1)
+    logger.add_scalar(f"{split}/avg_mae", mae_total / num_batches, iteration + 1)
+    logger.add_scalar(f"{split}/avg_psnr", psnr_total / num_batches, iteration + 1)
+    logger.add_scalar(f"{split}/avg_fid", fid_total / num_batches, iteration + 1)
+    logger.add_scalar(f"{split}/avg_ssim", ssim_total / num_batches, iteration + 1)
+    logger.add_scalar(f"{split}/avg_lpips", lpips_total / num_batches, iteration + 1)
+    return loss_total / num_batches
