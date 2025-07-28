@@ -58,14 +58,15 @@ class DataCfg(BaseDataCfg):
 class ModelCfg:
     # for possible architectures see https://smp.readthedocs.io/en/latest/models.html
     arch: str = (
-        "unetplusplus"  # some modification of the code may be neccessary if changed
+        "unet"  # some modification of the code may be neccessary if changed
     )
     # for possible encoder and encoder weights options see https://smp.readthedocs.io/en/latest/encoders.html
     # This encoder refers to the downsampling block, not the latent diffusion autoencoder
     encoder: str = (
-        "resnet18"  # some modification of the code may be neccessary if changed
+        "mit_b1"  # some modification of the code may be neccessary if changed
     )
     encoder_weights: str | None = None
+    swin_attention: bool = True
     t_embedding_dim: int = 32
 
 
