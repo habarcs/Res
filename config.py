@@ -13,7 +13,7 @@ class EMACfg:
 @dataclass
 class DiffusionCfg:
     p: float = 0.3
-    T: int = 15
+    T: int = 10
     kappa: float = 1.0
 
 
@@ -58,9 +58,7 @@ class DataCfg(BaseDataCfg):
 @dataclass
 class ModelCfg:
     # for possible architectures see https://smp.readthedocs.io/en/latest/models.html
-    arch: str = (
-        "unet"  # some modification of the code may be neccessary if changed
-    )
+    arch: str = "unet"  # some modification of the code may be neccessary if changed
     # for possible encoder and encoder weights options see https://smp.readthedocs.io/en/latest/encoders.html
     # This encoder refers to the downsampling block, not the latent diffusion autoencoder
     encoder: str = (
