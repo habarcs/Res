@@ -52,6 +52,7 @@ class DataCfg(BaseDataCfg):
     grayscale: bool = True
     batch_size: int = 64
     num_workers: int = 4
+    ultrasound_augmentation: bool = True
 
 
 @dataclass

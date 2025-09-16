@@ -34,7 +34,7 @@ def data_loader_from_config(
     list[str],
 ]:
     hq_transform, lq_transform = create_row_transforms(
-        cfg.image_size, cfg.scale_factor, cfg.mean, cfg.std, cfg.grayscale
+        cfg.image_size, cfg.scale_factor, cfg.mean, cfg.std, cfg.grayscale, cfg.ultrasound_augmentation
     )
 
     dataset = DiffusionDataset(cfg.data_dir, lq_transform, hq_transform)

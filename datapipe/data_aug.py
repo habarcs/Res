@@ -1,11 +1,20 @@
 from typing import Sequence
-from torchvision.transforms import InterpolationMode, v2
-from torchvision import transforms
+
 import torch
+from torchvision import transforms
+from torchvision.transforms import InterpolationMode, v2
+from transforms.gaussian_shadow import GaussianShadow
+from transforms.haze import HazeArtifact
+from transforms.attenuation import DepthAttenuation
 
 
 def create_row_transforms(
-    size: int, scale: int, mean: float, std: float, grayscale: bool
+    size: int,
+    scale: int,
+    mean: float,
+    std: float,
+    grayscale: bool,
+    ultrasound_transforms: bool,
 ) -> tuple[v2.Transform, v2.Transform]:
     base_transform = [
         v2.PILToTensor(),
@@ -21,8 +30,10 @@ def create_row_transforms(
         v2.Resize((size, size), interpolation=transforms.InterpolationMode.NEAREST),
     ]
 
+    random_apply = [ultrasound_augmentation()] if ultrasound_transforms else []
+
     hq_transform = v2.Compose(base_transform + normalizer)
-    lq_transform = v2.Compose(base_transform + row_scaler + normalizer)
+    lq_transform = v2.Compose(base_transform + row_scaler + random_apply + normalizer)
     return hq_transform, lq_transform
 
 
@@ -39,3 +50,22 @@ def create_image_classification_transform(
         ]
     )
     return transform
+
+
+def ultrasound_augmentation() -> v2.Transform:
+    brightness = v2.ColorJitter(
+        brightness=[-0.2, 0.2],
+    )
+    contrast = v2.ColorJitter(
+        contrast=[-0.2, 0.2],
+    )
+    noise = v2.GaussianNoise(mean=0.0, sigma=0.0225)
+
+    haze = HazeArtifact()
+    depth_attenuation = DepthAttenuation()
+    gauss_shadow = GaussianShadow()
+
+    random = v2.RandomChoice(
+        [brightness, contrast, noise, haze, depth_attenuation, gauss_shadow]
+    )
+    return random
