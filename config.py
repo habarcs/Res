@@ -93,7 +93,7 @@ class ClassifierDataCfg(BaseDataCfg):
 
 
 @dataclass
-class ClassifierFineTuneCfg:
+class ClassifierTrainingCfg:
     epochs: int = 30
     starting_lr: float = 4e-5
     ending_lr: float = 1e-8

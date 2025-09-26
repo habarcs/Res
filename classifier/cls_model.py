@@ -92,7 +92,7 @@ def test_step(
 def save_model(
     model: ClsModel,
     ema_model: AveragedModel | None,
-    cfg: config.ClassifierFineTuneCfg,
+    cfg: config.ClassifierTrainingCfg,
     epoch_id: int,
     acc: float,
 ):
