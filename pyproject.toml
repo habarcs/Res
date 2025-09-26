@@ -13,5 +13,4 @@ dependencies = [
 ]
 
 [tool.pyright]
-ignore = ["latent-diffusion/"]
 typeCheckingMode = "standard"
