@@ -86,3 +86,32 @@ def classfication_data_loader_from_config(
     test_loader = data.DataLoader(train, cfg.batch_size, num_workers=cfg.num_workers)
 
     return train_loader, val_loader, test_loader, dataset.classes
+
+
+def autoencoder_data_loader_from_config(
+    cfg: config.VQGANCfg,
+) -> tuple[
+    data.DataLoader[ImageFolder],
+    data.DataLoader[ImageFolder],
+    data.DataLoader[ImageFolder],
+]:
+    transform = create_image_classification_transform(cfg.image_size, cfg.mean, cfg.std)
+
+    dataset = ImageFolder(cfg.data_dir, transform, None)
+
+    split_generator = torch.Generator().manual_seed(
+        cfg.split_seed
+    )  # assure that split is the same everytime
+    train, val, test = data.random_split(
+        dataset, [cfg.train_ratio, cfg.val_ratio, cfg.test_ratio], split_generator
+    )
+
+    train_loader = data.DataLoader(
+        train, cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
+    )
+
+    val_loader = data.DataLoader(val, cfg.batch_size, num_workers=cfg.num_workers)
+
+    test_loader = data.DataLoader(train, cfg.batch_size, num_workers=cfg.num_workers)
+
+    return train_loader, val_loader, test_loader

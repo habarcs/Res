@@ -1,3 +1,4 @@
+from re import A
 from torch.utils import data
 from torch import nn, optim
 import torch
@@ -8,6 +9,7 @@ from torch.optim.swa_utils import AveragedModel
 from torch.nn.functional import l1_loss
 from piq import psnr, ssim, LPIPS, FID
 from loss.combined_loss import CombinedLoss
+from taming.models.vqgan import VQModel
 from training.saver import save_state
 
 
@@ -20,6 +22,7 @@ def train_loop(
     val_dataloader: data.DataLoader,
     model: nn.Module,
     ema_model: AveragedModel | None,
+    autoencoder: VQModel | None,
     loss_fn: CombinedLoss,
     optimizer: optim.Optimizer,
     scheduler: optim.lr_scheduler.LRScheduler,
@@ -30,12 +33,27 @@ def train_loop(
         model.train()
         hq, lq = next(train_iterator)
         lq, hq = lq.to(device), hq.to(device)
-        t = diffusor.sample_timesteps(lq.shape[0]).to(device)
-        x_t = diffusor.forward_process(lq, hq, t, device)
-        pred = model(x_t, lq, t)
-        loss = loss_fn(pred, hq)
+        if autoencoder:
+            z_lq = autoencoder.encode(lq)
+            z_hq = autoencoder.encode(hq)
+            t = diffusor.sample_timesteps(z_lq.shape[0]).to(device)
+            z_x_t = diffusor.forward_process(z_lq, z_hq, t, device)
+            z_pred = model(z_x_t, z_lq, t)
+            loss_autoencoder = torch.nn.functional.mse_loss(z_pred, z_hq)
+            loss_autoencoder.backward()
+            pred = autoencoder.decode(z_pred)
 
+            logger.add_scalar(
+                "Train/latentmseloss", loss_autoencoder.item(), iteration + 1
+            )
+        else:
+            t = diffusor.sample_timesteps(lq.shape[0]).to(device)
+            x_t = diffusor.forward_process(lq, hq, t, device)
+            pred = model(x_t, lq, t)
+
+        loss = loss_fn(pred, hq)
         loss.backward()
+
         if (iteration + 1) % cfg.backprop_freq == 0:
             optimizer.step()
             optimizer.zero_grad()
@@ -46,6 +64,7 @@ def train_loop(
         logger.add_scalar("Train/mseloss", loss_fn.last_mse, iteration + 1)
         logger.add_scalar("Train/perceploss", loss_fn.last_percep, iteration + 1)
         logger.add_scalar("Train/lrrate", scheduler.get_last_lr()[0], iteration + 1)
+
         print(f"Train {iteration + 1} loss: {loss.item()}")
 
         if cfg.scheduler_freq and (iteration + 1) % cfg.scheduler_freq == 0:
@@ -57,6 +76,7 @@ def train_loop(
                 "Val",
                 iteration,
                 device,
+                autoencoder,
                 diffusor,
                 val_dataloader,
                 val_model,
@@ -71,6 +91,7 @@ def eval_loop(
     split: str,
     iteration: int,
     device: torch.device,
+    autoencoder: VQModel | None,
     diffusor: Diffusion,
     dataloader: data.DataLoader,
     model: nn.Module,
@@ -85,6 +106,7 @@ def eval_loop(
     fid_total = 0.0
     ssim_total = 0.0
     lpips_total = 0.0
+    autoencoder_loss_total = 0.0
     batch_size = dataloader.batch_size
     assert isinstance(batch_size, int)
 
@@ -94,7 +116,21 @@ def eval_loop(
     model.eval()
     for batch, (hq, lq) in enumerate(dataloader):
         lq, hq = lq.to(device), hq.to(device)
-        pred, progress = diffusor.reverse_process(lq, model, True, device)
+        if autoencoder:
+            z_lq = autoencoder.encode(lq)
+            z_hq = autoencoder.encode(hq)
+            z_pred, progress = diffusor.reverse_process(z_lq, model, True, device)
+            autoencoder_loss_total += torch.nn.functional.mse_loss(z_pred, z_hq).item()
+            pred = autoencoder.decode(z_pred)
+            images = (
+                [lq[0]]
+                + [autoencoder.decode(p[0]) for p in progress]
+                + [pred[0]]
+                + [hq[0]]
+            )
+        else:
+            pred, progress = diffusor.reverse_process(lq, model, True, device)
+            images = [lq[0]] + [p[0] for p in progress] + [pred[0]] + [hq[0]]
         loss = loss_fn(pred, hq)
 
         loss_total += loss.item()
@@ -106,9 +142,9 @@ def eval_loop(
         ssim_total += ssim(pred, hq)[0].item()
         lpips_total += lpips(pred, hq).item()
 
-        image_id = batch_size * batch
-        images = [lq[0]] + [p[0] for p in progress] + [pred[0]] + [hq[0]]
-        logger.add_images(f"{split}/{image_id}", torch.stack(images), iteration + 1)
+        logger.add_images(
+            f"{split}/{batch_size * batch}", torch.stack(images), iteration + 1
+        )
 
         print(f"{split} {batch + 1} loss: {loss}")
 
@@ -120,4 +156,10 @@ def eval_loop(
     logger.add_scalar(f"{split}/avg_fid", fid_total / num_batches, iteration + 1)
     logger.add_scalar(f"{split}/avg_ssim", ssim_total / num_batches, iteration + 1)
     logger.add_scalar(f"{split}/avg_lpips", lpips_total / num_batches, iteration + 1)
+    if autoencoder:
+        logger.add_scalar(
+            f"{split}/avg_autoencoder_loss",
+            autoencoder_loss_total / num_batches,
+            iteration + 1,
+        )
     return loss_total / num_batches

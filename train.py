@@ -8,6 +8,7 @@ import config
 from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
 from loss.combined_loss import CombinedLoss
+from taming.models.vqgan import VQModel
 from training.trainer import train_loop
 from ema.ema_model import ema_model_from_config
 from upscaler.smp_model import SmpModel
@@ -24,6 +25,7 @@ def train():
     model_cfg = config.ModelCfg()
     diffusion_cfg = config.DiffusionCfg()
     training_cfg = config.TrainingCfg()
+    autoencoder_cfg = config.VQGANCfg()
     run_id = get_optional_run_id()
     if run_id:
         training_cfg.run_id = run_id
@@ -41,6 +43,20 @@ def train():
     model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg).to(device)
     ema_model = ema_model_from_config(model, ema_cfg, device)
     diffusor = Diffusion.from_config(diffusion_cfg)
+
+    if model_cfg.autoencoder:
+        autoencoder = VQModel(
+            autoencoder_cfg.ddconfig,
+            None,
+            autoencoder_cfg.n_embed,
+            autoencoder_cfg.embed_dim,
+            model_cfg.autoencoder_model_path,
+        )
+        for param in autoencoder.parameters():
+            param.requires_grad = False
+        autoencoder.eval()
+    else:
+        autoencoder = None
 
     combined_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
 
@@ -67,6 +83,7 @@ def train():
         val_loader,
         model,
         ema_model,
+        autoencoder,
         combined_loss,
         optimizer,
         scheduler,

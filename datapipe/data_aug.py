@@ -1,11 +1,10 @@
 from typing import Sequence
 
 import torch
-from torchvision import transforms
 from torchvision.transforms import InterpolationMode, v2
-from transforms.gaussian_shadow import GaussianShadow
-from transforms.haze import HazeArtifact
-from transforms.attenuation import DepthAttenuation
+from datapipe.transforms.gaussian_shadow import GaussianShadow
+from datapipe.transforms.haze import HazeArtifact
+from datapipe.transforms.attenuation import DepthAttenuation
 
 
 def create_row_transforms(
@@ -27,7 +26,7 @@ def create_row_transforms(
     normalizer = [v2.ToDtype(torch.float32, scale=True), v2.Normalize((mean,), (std,))]
     row_scaler = [
         v2.Lambda(lambda img: img[..., 0::scale, :]),
-        v2.Resize((size, size), interpolation=transforms.InterpolationMode.NEAREST),
+        v2.Resize((size, size), interpolation=InterpolationMode.NEAREST),
     ]
 
     random_apply = [ultrasound_augmentation()] if ultrasound_transforms else []

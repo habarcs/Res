@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime
 from collections.abc import Sequence
@@ -67,6 +67,8 @@ class ModelCfg:
     encoder_weights: str | None = None
     swin_attention: bool = True
     t_embedding_dim: int = 32
+    autoencoder: bool = True
+    autoencoder_model_path: Path  = Path("")
 
 
 @dataclass
@@ -75,13 +77,6 @@ class LossCfg:
     use_ema: bool = True
     perceptual_coef: float = 0.05
     perceptual_loss_weights: Sequence[float] = (1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
-
-
-@dataclass
-class AutoencoderCfg:
-    enabled: bool = True
-    arch: str = ""
-    weights: str = ""
 
 
 @dataclass
@@ -106,3 +101,41 @@ class ClassifierTrainingCfg:
 class ClassifierEMACfg:
     enabled: bool = True
     decay: float = 0.999
+
+
+@dataclass
+class VQGANCfg(BaseDataCfg):
+    embed_dim: int = 256
+    n_embed: int = 1024
+    base_learning_rate: float = 4.5e-6
+
+    ddconfig: dict = field(
+        default_factory=lambda: {
+            "double_z": False,
+            "z_channels": 256,
+            "resolution": 256,
+            "in_channels": 3,
+            "out_ch": 3,
+            "ch": 128,
+            "ch_mult": [1, 1, 2, 2, 4],  # num_down = len(ch_mult)-1
+            "num_res_blocks": 2,
+            "attn_resolutions": [16],
+            "dropout": 0.0,
+        }
+    )
+
+    # disriminator loss
+    lossconfig: dict = field(
+        default_factory=lambda: {
+            "disc_conditional": False,
+            "disc_in_channels": 3,
+            "disc_start": 10000,
+            "disc_weight": 0.8,
+            "codebook_weight": 1.0,
+        }
+    )
+
+    # data
+    batch_size = 12
+    run_id: str = "auto_" + datetime.now().isoformat(timespec="minutes")
+    save_dir: Path = Path("out")
