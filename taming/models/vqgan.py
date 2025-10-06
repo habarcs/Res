@@ -79,15 +79,8 @@ class VQModel(pl.LightningModule):
         dec = self.decode(quant)
         return dec, diff
 
-    def get_input(self, batch, k):
-        x = batch[k]
-        if len(x.shape) == 3:
-            x = x[..., None]
-        x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format)
-        return x.float()
-
     def training_step(self, batch, batch_idx):
-        x = self.get_input(batch, self.image_key)
+        x, _ = batch
         xrec, qloss = self(x)
 
         opt_ae, opt_disc = self.optimizers()  # pyright: ignore[reportGeneralTypeIssues]
@@ -145,7 +138,7 @@ class VQModel(pl.LightningModule):
         )
 
     def validation_step(self, batch, batch_idx):
-        x = self.get_input(batch, self.image_key)
+        x, _ = batch
         xrec, qloss = self(x)
         aeloss, log_dict_ae = self.loss(
             qloss,
@@ -166,10 +159,9 @@ class VQModel(pl.LightningModule):
             last_layer=self.get_last_layer(),
             split="val",
         )
-        rec_loss = log_dict_ae["val/rec_loss"]
         self.log(
-            "val/rec_loss",
-            rec_loss,
+            "val/discloss",
+            discloss,
             prog_bar=True,
             logger=True,
             on_step=True,
@@ -210,7 +202,7 @@ class VQModel(pl.LightningModule):
 
     def log_images(self, batch, **kwargs):
         log = dict()
-        x = self.get_input(batch, self.image_key)
+        x, _ = batch
         x = x.to(self.device)
         xrec, _ = self(x)
         if x.shape[1] > 3:

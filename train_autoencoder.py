@@ -20,8 +20,8 @@ def get_optional_run_id() -> str | None:
 def train(cfg: config.VQGANCfg):
     torch.set_float32_matmul_precision("high")
     loss = VQLPIPSWithDiscriminator(**cfg.lossconfig)
-    autoencoder = VQModel(cfg.ddconfig, loss, cfg.n_embed, cfg.embed_dim)
-    autoencoder.learning_rate = cfg.batch_size * cfg.base_learning_rate
+    autoencoder = VQModel(cfg.ddconfig, loss, cfg.n_embed, cfg.embed_dim, image_key=0)  # pyright: ignore[reportArgumentType]
+    autoencoder.learning_rate = cfg.batch_size * cfg.base_learning_rate  # pyright: ignore[reportArgumentType]
 
     train_loader, val_loader, test_loader = autoencoder_data_loader_from_config(cfg)
 
