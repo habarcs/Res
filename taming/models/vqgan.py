@@ -45,6 +45,7 @@ class VQModel(pl.LightningModule):
             self.register_buffer("colorize", torch.randn(3, colorize_nlabels, 1, 1))
         if monitor is not None:
             self.monitor = monitor
+        self.automatic_optimization = False
 
     def init_from_ckpt(self, path, ignore_keys=list()):
         sd = torch.load(path, map_location="cpu")["state_dict"]
@@ -85,58 +86,63 @@ class VQModel(pl.LightningModule):
         x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format)
         return x.float()
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx):
         x = self.get_input(batch, self.image_key)
         xrec, qloss = self(x)
 
-        if optimizer_idx == 0:
-            # autoencode
-            aeloss, log_dict_ae = self.loss(
-                qloss,
-                x,
-                xrec,
-                optimizer_idx,
-                self.global_step,
-                last_layer=self.get_last_layer(),
-                split="train",
-            )
+        opt_ae, opt_disc = self.optimizers()  # pyright: ignore[reportGeneralTypeIssues]
 
-            self.log(
-                "train/aeloss",
-                aeloss,
-                prog_bar=True,
-                logger=True,
-                on_step=True,
-                on_epoch=True,
-            )
-            self.log_dict(
-                log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True
-            )
-            return aeloss
+        # autoencode
+        aeloss, log_dict_ae = self.loss(
+            qloss,
+            x,
+            xrec,
+            0,
+            self.global_step,
+            last_layer=self.get_last_layer(),
+            split="train",
+        )
+        opt_ae.zero_grad()
+        self.manual_backward(aeloss)
+        opt_ae.step()
 
-        if optimizer_idx == 1:
-            # discriminator
-            discloss, log_dict_disc = self.loss(
-                qloss,
-                x,
-                xrec,
-                optimizer_idx,
-                self.global_step,
-                last_layer=self.get_last_layer(),
-                split="train",
-            )
-            self.log(
-                "train/discloss",
-                discloss,
-                prog_bar=True,
-                logger=True,
-                on_step=True,
-                on_epoch=True,
-            )
-            self.log_dict(
-                log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True
-            )
-            return discloss
+        self.log(
+            "train/aeloss",
+            aeloss,
+            prog_bar=True,
+            logger=True,
+            on_step=True,
+            on_epoch=True,
+        )
+        self.log_dict(
+            log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=True
+        )
+
+        # discriminator
+        discloss, log_dict_disc = self.loss(
+            qloss,
+            x,
+            xrec,
+            1,
+            self.global_step,
+            last_layer=self.get_last_layer(),
+            split="train",
+        )
+        opt_disc.zero_grad()
+        self.manual_backward(discloss)
+        opt_disc.step()
+
+        self.log(
+            "train/discloss",
+            discloss,
+            prog_bar=True,
+            logger=True,
+            on_step=True,
+            on_epoch=True,
+        )
+        self.log_dict(
+            log_dict_disc, prog_bar=False, logger=True, on_step=True, on_epoch=True
+        )
 
     def validation_step(self, batch, batch_idx):
         x = self.get_input(batch, self.image_key)
