@@ -83,7 +83,7 @@ def classfication_data_loader_from_config(
 
     val_loader = data.DataLoader(val, cfg.batch_size, num_workers=cfg.num_workers)
 
-    test_loader = data.DataLoader(train, cfg.batch_size, num_workers=cfg.num_workers)
+    test_loader = data.DataLoader(test, cfg.batch_size, num_workers=cfg.num_workers)
 
     return train_loader, val_loader, test_loader, dataset.classes
 
@@ -112,6 +112,6 @@ def autoencoder_data_loader_from_config(
 
     val_loader = data.DataLoader(val, cfg.batch_size, num_workers=cfg.num_workers)
 
-    test_loader = data.DataLoader(train, cfg.batch_size, num_workers=cfg.num_workers)
+    test_loader = data.DataLoader(test, cfg.batch_size, num_workers=cfg.num_workers)
 
     return train_loader, val_loader, test_loader

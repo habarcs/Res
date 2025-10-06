@@ -68,7 +68,7 @@ class ModelCfg:
     swin_attention: bool = True
     t_embedding_dim: int = 32
     autoencoder: bool = True
-    autoencoder_model_path: Path  = Path("")
+    autoencoder_model_path: Path = Path("")
 
 
 @dataclass
@@ -105,6 +105,10 @@ class ClassifierEMACfg:
 
 @dataclass
 class VQGANCfg(BaseDataCfg):
+    mean: Sequence[float] = (0.5, 0.5, 0.5)
+    std: Sequence[float] = (0.5, 0.5, 0.5)
+    num_workers: int = 4
+
     embed_dim: int = 256
     n_embed: int = 1024
     base_learning_rate: float = 4.5e-6
