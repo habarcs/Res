@@ -141,5 +141,6 @@ class VQGANCfg(BaseDataCfg):
 
     # data
     batch_size = 12
+    num_epochs = 1000
     run_id: str = "auto_" + datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("out")

@@ -1,5 +1,6 @@
 import argparse
 from pytorch_lightning import Trainer
+import torch
 
 import config
 from taming.models.vqgan import VQModel
@@ -17,13 +18,19 @@ def get_optional_run_id() -> str | None:
 
 
 def train(cfg: config.VQGANCfg):
+    torch.set_float32_matmul_precision("high")
     loss = VQLPIPSWithDiscriminator(**cfg.lossconfig)
     autoencoder = VQModel(cfg.ddconfig, loss, cfg.n_embed, cfg.embed_dim)
     autoencoder.learning_rate = cfg.batch_size * cfg.base_learning_rate
 
     train_loader, val_loader, test_loader = autoencoder_data_loader_from_config(cfg)
 
-    trainer = Trainer(deterministic=True, default_root_dir=cfg.save_dir, logger=True)
+    trainer = Trainer(
+        deterministic=True,
+        default_root_dir=cfg.save_dir,
+        logger=True,
+        max_epochs=cfg.num_epochs,
+    )
     trainer.fit(autoencoder, train_loader, val_loader)
 
     trainer.test(autoencoder, test_loader)
