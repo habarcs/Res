@@ -1,4 +1,3 @@
-from re import A
 from torch.utils import data
 from torch import nn, optim
 import torch
@@ -34,8 +33,8 @@ def train_loop(
         hq, lq = next(train_iterator)
         lq, hq = lq.to(device), hq.to(device)
         if autoencoder:
-            z_lq = autoencoder.encode(lq)
-            z_hq = autoencoder.encode(hq)
+            z_lq, _, _ = autoencoder.encode(lq)
+            z_hq, _, _ = autoencoder.encode(hq)
             t = diffusor.sample_timesteps(z_lq.shape[0]).to(device)
             z_x_t = diffusor.forward_process(z_lq, z_hq, t, device)
             z_pred = model(z_x_t, z_lq, t)
@@ -117,8 +116,8 @@ def eval_loop(
     for batch, (hq, lq) in enumerate(dataloader):
         lq, hq = lq.to(device), hq.to(device)
         if autoencoder:
-            z_lq = autoencoder.encode(lq)
-            z_hq = autoencoder.encode(hq)
+            z_lq, _, _ = autoencoder.encode(lq)
+            z_hq, _, _ = autoencoder.encode(hq)
             z_pred, progress = diffusor.reverse_process(z_lq, model, True, device)
             autoencoder_loss_total += torch.nn.functional.mse_loss(z_pred, z_hq).item()
             pred = autoencoder.decode(z_pred)
