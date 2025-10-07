@@ -33,7 +33,7 @@ def train(cfg: config.VQGANCfg):
     )
     trainer.fit(autoencoder, train_loader, val_loader)
 
-    trainer.test(autoencoder, test_loader)
+    trainer.validate(autoencoder, test_loader)
 
 
 if __name__ == "__main__":
