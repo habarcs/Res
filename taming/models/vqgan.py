@@ -46,6 +46,7 @@ class VQModel(pl.LightningModule):
         if monitor is not None:
             self.monitor = monitor
         self.automatic_optimization = False
+        self.save_hyperparameters()
 
     def init_from_ckpt(self, path, ignore_keys=list()):
         sd = torch.load(path, map_location="cpu")["state_dict"]

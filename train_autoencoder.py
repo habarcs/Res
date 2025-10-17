@@ -1,14 +1,15 @@
 import argparse
-from pytorch_lightning import Trainer
+
+from pytorch_lightning.callbacks import ModelCheckpoint
 import torch
+from pytorch_lightning import Trainer
 
 import config
-from taming.models.vqgan import VQModel
-from taming.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
-
 from datapipe.dataloader import (
     autoencoder_data_loader_from_config,
 )
+from taming.models.vqgan import VQModel
+from taming.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
 
 
 def get_optional_run_id() -> str | None:
@@ -24,12 +25,17 @@ def train(cfg: config.VQGANCfg):
     autoencoder.learning_rate = cfg.batch_size * cfg.base_learning_rate  # pyright: ignore[reportArgumentType]
 
     train_loader, val_loader, test_loader = autoencoder_data_loader_from_config(cfg)
+    checkpoint_callback = ModelCheckpoint(
+        every_n_train_steps=2000,
+    )
 
     trainer = Trainer(
         deterministic=True,
         default_root_dir=cfg.save_dir,
         logger=True,
         max_epochs=cfg.num_epochs,
+        val_check_interval=0.2,
+        callbacks=[checkpoint_callback],
     )
     trainer.fit(autoencoder, train_loader, val_loader)
 
