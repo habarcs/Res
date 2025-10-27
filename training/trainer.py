@@ -6,7 +6,7 @@ import config
 from diffusion.diffusion import Diffusion
 from torch.optim.swa_utils import AveragedModel
 from torch.nn.functional import l1_loss
-from piq import psnr, ssim, LPIPS, FID
+from piq import psnr, ssim, LPIPS
 from loss.combined_loss import CombinedLoss
 from taming.models.vqgan import VQModel
 from training.saver import save_state
@@ -125,7 +125,6 @@ def eval_loop(
     batch_size = dataloader.batch_size
     assert isinstance(batch_size, int)
 
-    fid = FID()
     lpips = LPIPS()
 
     model.eval()
@@ -158,7 +157,6 @@ def eval_loop(
             to_dtype(hq, torch.uint8, scale=True),
             data_range=255,
         ).item()
-        fid_total += fid(fid.compute_feats(pred), fid.compute_feats(hq)).item()
         ssim_total += ssim(
             to_dtype(pred, torch.uint8, scale=True),
             to_dtype(hq, torch.uint8, scale=True),
