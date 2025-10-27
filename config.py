@@ -73,6 +73,7 @@ class ModelCfg:
 
 @dataclass
 class LossCfg:
+    use_percpetual_loss: bool = True
     perceptual_model_path: Path = Path("")
     use_ema: bool = True
     perceptual_coef: float = 0.05

@@ -22,7 +22,7 @@ def train_loop(
     model: nn.Module,
     ema_model: AveragedModel | None,
     autoencoder: VQModel | None,
-    loss_fn: CombinedLoss,
+    loss_fn: CombinedLoss | torch.nn.MSELoss,
     optimizer: optim.Optimizer,
     scheduler: optim.lr_scheduler.LRScheduler,
     start_iteration: int = 0,
@@ -94,7 +94,7 @@ def eval_loop(
     diffusor: Diffusion,
     dataloader: data.DataLoader,
     model: nn.Module,
-    loss_fn: CombinedLoss,
+    loss_fn: CombinedLoss | torch.nn.MSELoss,
 ) -> float:
     num_batches = len(dataloader)
     loss_total = 0.0
@@ -133,8 +133,9 @@ def eval_loop(
         loss = loss_fn(pred, hq)
 
         loss_total += loss.item()
-        mse_total += loss.last_mse
-        percep_total += loss.last_percep
+        if isinstance(loss_fn, CombinedLoss):
+            mse_total += loss.last_mse
+            percep_total += loss.last_percep
         mae_total += l1_loss(pred, hq).item()
         psnr_total += psnr(pred, hq).item()
         fid_total += fid(pred, hq).item()

@@ -58,14 +58,18 @@ def train():
     else:
         autoencoder = None
 
-    combined_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
+    if loss_cfg.use_percpetual_loss:
+        loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
+    else:
+        loss = torch.nn.MSELoss()
 
     if training_cfg.compile:
         torch.set_float32_matmul_precision("high")
         model.compile()
         if ema_model:
             ema_model.compile()
-        combined_loss.compile()
+        if loss_cfg.use_percpetual_loss:
+            loss.compile()
 
     optimizer = torch.optim.Adam(model.parameters(), training_cfg.lr_start)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -84,7 +88,7 @@ def train():
         model,
         ema_model,
         autoencoder,
-        combined_loss,
+        loss,
         optimizer,
         scheduler,
     )
