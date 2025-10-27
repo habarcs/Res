@@ -158,7 +158,7 @@ def eval_loop(
             to_dtype(hq, torch.uint8, scale=True),
             data_range=255,
         ).item()
-        fid_total += fid(pred, hq).item()
+        fid_total += fid(fid.compute_feats(pred), fid.compute_feats(hq)).item()
         ssim_total += ssim(
             to_dtype(pred, torch.uint8, scale=True),
             to_dtype(hq, torch.uint8, scale=True),
