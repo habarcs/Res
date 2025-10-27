@@ -36,7 +36,7 @@ def train():
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     torch.manual_seed(2025)
 
-    train_loader, val_loader, _, classes = data_loader_from_config(data_cfg)
+    train_loader, val_loader, test_loader, classes = data_loader_from_config(data_cfg)
     model = create_resshift_model(data_cfg.image_size, data_cfg.grayscale).to(device)
     ema_model = ema_model_from_config(model, ema_cfg, device)
     diffusor = Diffusion.from_config(diffusion_cfg)
@@ -64,8 +64,10 @@ def train():
         diffusor,
         train_loader,
         val_loader,
+        test_loader,
         model,
         ema_model,
+        None,
         combined_loss,
         optimizer,
         scheduler,

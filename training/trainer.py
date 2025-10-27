@@ -20,6 +20,7 @@ def train_loop(
     diffusor: Diffusion,
     train_dataloader: data.DataLoader,
     val_dataloader: data.DataLoader,
+    test_dataloader: data.DataLoader,
     model: nn.Module,
     ema_model: AveragedModel | None,
     autoencoder: VQModel | None,
@@ -85,6 +86,19 @@ def train_loop(
             )
             save_state(cfg, iteration + 1, val_loss, model, ema_model)
 
+    test_model = ema_model if ema_model else model
+    eval_loop(
+        logger,
+        "Test",
+        cfg.iterations,
+        device,
+        autoencoder,
+        diffusor,
+        test_dataloader,
+        test_model,
+        loss_fn,
+    )
+
 
 @torch.no_grad()
 def eval_loop(
@@ -140,13 +154,15 @@ def eval_loop(
             percep_total += loss.last_percep
         mae_total += l1_loss(pred, hq).item()
         psnr_total += psnr(
-            to_dtype(pred, torch.float, scale=True),
-            to_dtype(hq, torch.float, scale=True),
+            to_dtype(pred, torch.uint8, scale=True),
+            to_dtype(hq, torch.uint8, scale=True),
+            data_range=255,
         ).item()
         fid_total += fid(pred, hq).item()
         ssim_total += ssim(
-            to_dtype(pred, torch.float, scale=True),
-            to_dtype(hq, torch.float, scale=True),
+            to_dtype(pred, torch.uint8, scale=True),
+            to_dtype(hq, torch.uint8, scale=True),
+            data_range=255,
         )[0].item()
         lpips_total += lpips(pred, hq).item()
 
