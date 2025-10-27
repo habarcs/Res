@@ -10,6 +10,7 @@ from piq import psnr, ssim, LPIPS, FID
 from loss.combined_loss import CombinedLoss
 from taming.models.vqgan import VQModel
 from training.saver import save_state
+from torchvision.transforms.v2.functional import to_dtype
 
 
 def train_loop(
@@ -138,9 +139,15 @@ def eval_loop(
             mse_total += loss.last_mse
             percep_total += loss.last_percep
         mae_total += l1_loss(pred, hq).item()
-        psnr_total += psnr(pred, hq).item()
+        psnr_total += psnr(
+            to_dtype(pred, torch.float, scale=True),
+            to_dtype(hq, torch.float, scale=True),
+        ).item()
         fid_total += fid(pred, hq).item()
-        ssim_total += ssim(pred, hq)[0].item()
+        ssim_total += ssim(
+            to_dtype(pred, torch.float, scale=True),
+            to_dtype(hq, torch.float, scale=True),
+        )[0].item()
         lpips_total += lpips(pred, hq).item()
 
         logger.add_images(
