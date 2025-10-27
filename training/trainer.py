@@ -60,8 +60,9 @@ def train_loop(
                 ema_model.update_parameters(model)
 
         logger.add_scalar("Train/loss", loss.item(), iteration + 1)
-        logger.add_scalar("Train/mseloss", loss_fn.last_mse, iteration + 1)
-        logger.add_scalar("Train/perceploss", loss_fn.last_percep, iteration + 1)
+        if isinstance(loss_fn, CombinedLoss):
+            logger.add_scalar("Train/mseloss", loss_fn.last_mse, iteration + 1)
+            logger.add_scalar("Train/perceploss", loss_fn.last_percep, iteration + 1)
         logger.add_scalar("Train/lrrate", scheduler.get_last_lr()[0], iteration + 1)
 
         print(f"Train {iteration + 1} loss: {loss.item()}")
