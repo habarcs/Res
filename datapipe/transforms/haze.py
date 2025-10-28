@@ -24,7 +24,7 @@ class HazeArtifact(v2.Transform):
         sigma = params["sigma"]
 
         haze = 0.5 * u * torch.exp(-torch.pow(d - r, 2) / (2 * torch.pow(sigma, 2)))
-        return torch.mul(haze, input)
+        return torch.mul(haze, inpt)
 
     def make_params(self, flat_inputs: List[Any]) -> Dict[str, Any]:
         params = dict()
