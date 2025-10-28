@@ -19,11 +19,12 @@ def create_row_transforms(
         v2.PILToTensor(),
         v2.Resize(size),
         v2.CenterCrop(size),
+        v2.ToDtype(torch.float32, scale=True),
     ]
     if grayscale:
         base_transform.append(v2.Grayscale(1))
 
-    normalizer = [v2.ToDtype(torch.float32, scale=True), v2.Normalize((mean,), (std,))]
+    normalizer = [v2.Normalize((mean,), (std,))]
     row_scaler = [
         v2.Lambda(lambda img: img[..., 0::scale, :]),
         v2.Resize((size, size), interpolation=InterpolationMode.NEAREST),
