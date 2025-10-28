@@ -32,7 +32,7 @@ def create_row_transforms(
     random_apply = [ultrasound_augmentation()] if ultrasound_transforms else []
 
     hq_transform = v2.Compose(base_transform + normalizer)
-    lq_transform = v2.Compose(random_apply + base_transform + row_scaler + normalizer)
+    lq_transform = v2.Compose(base_transform + random_apply + row_scaler + normalizer)
     return hq_transform, lq_transform
 
 
