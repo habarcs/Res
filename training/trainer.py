@@ -161,7 +161,7 @@ def eval_loop(
             to_dtype(pred, torch.uint8, scale=True),
             to_dtype(hq, torch.uint8, scale=True),
             data_range=255,
-        )[0].item()
+        ).item()  # pyright: ignore[reportAttributeAccessIssue] full=false only returns one value
         lpips_total += lpips(pred, hq).item()
 
         logger.add_images(
