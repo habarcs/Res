@@ -53,10 +53,10 @@ def create_image_classification_transform(
 
 def ultrasound_augmentation() -> v2.Transform:
     brightness = v2.ColorJitter(
-        brightness=[-0.2, 0.2],
+        brightness=0.2,
     )
     contrast = v2.ColorJitter(
-        contrast=[-0.2, 0.2],
+        contrast=0.2,
     )
     noise = v2.GaussianNoise(mean=0.0, sigma=0.0225)
 
