@@ -7,6 +7,11 @@ from torchvision.models.swin_transformer import ShiftedWindowAttentionV2
 import config
 
 
+class SWINAttention(ShiftedWindowAttentionV2):
+    def forward(self, x: torch.Tensor, height: int, width: int) -> torch.Tensor:  # pyright: ignore[reportIncompatibleMethodOverride]
+        return super().forward(x)
+
+
 class SmpModel(torch.nn.Module):
     def __init__(
         self,
@@ -55,7 +60,7 @@ class SmpModel(torch.nn.Module):
         for module in self.modules():
             for name, child in module.named_children():
                 if isinstance(child, Attention):
-                    shifted_attention = ShiftedWindowAttentionV2(
+                    shifted_attention = SWINAttention(
                         child.dim,
                         [8, 8],
                         [4, 4],
