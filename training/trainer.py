@@ -149,8 +149,8 @@ def eval_loop(
 
         loss_total += loss.item()
         if isinstance(loss_fn, CombinedLoss):
-            mse_total += loss.last_mse
-            percep_total += loss.last_percep
+            mse_total += loss_fn.last_mse
+            percep_total += loss_fn.last_percep
         mae_total += l1_loss(pred, hq).item()
         psnr_total += psnr(
             to_dtype(pred, torch.uint8, scale=True),
