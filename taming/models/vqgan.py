@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
+import torchvision
 
 from taming.modules.diffusionmodules.model import Encoder, Decoder
 from taming.modules.vqvae.quantize import VectorQuantizer2 as VectorQuantizer
@@ -22,6 +23,7 @@ class VQModel(pl.LightningModule):
         monitor=None,
         remap=None,
         sane_index_shape=False,  # tell vector quantizer to return indices as bhw
+        grayscale: bool = True,
     ):
         super().__init__()
         self.image_key = image_key
@@ -47,6 +49,7 @@ class VQModel(pl.LightningModule):
             self.monitor = monitor
         self.automatic_optimization = False
         self.save_hyperparameters()
+        self.grayscale = grayscale
 
     def init_from_ckpt(self, path, ignore_keys=list()):
         sd = torch.load(path, map_location="cpu", weights_only=False)["state_dict"]
@@ -60,6 +63,8 @@ class VQModel(pl.LightningModule):
         print(f"Restored from {path}")
 
     def encode(self, x):
+        if self.grayscale:
+            x = torchvision.transforms.v2.functional.to_grayscale(x, 3)
         h = self.encoder(x)
         h = self.quant_conv(h)
         quant, emb_loss, info = self.quantize(h)
@@ -73,6 +78,8 @@ class VQModel(pl.LightningModule):
     def decode_code(self, code_b):
         quant_b = self.quantize.embed_code(code_b)
         dec = self.decode(quant_b)
+        if self.grayscale:
+            dec = torchvision.transforms.v2.functional.to_grayscale(dec, 1)
         return dec
 
     def forward(self, input):

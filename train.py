@@ -51,6 +51,7 @@ def train():
             autoencoder_cfg.n_embed,
             autoencoder_cfg.embed_dim,
             model_cfg.autoencoder_model_path,
+            grayscale=data_cfg.grayscale
         )
         for param in autoencoder.parameters():
             param.requires_grad = False
