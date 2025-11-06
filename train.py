@@ -55,6 +55,7 @@ def train():
         for param in autoencoder.parameters():
             param.requires_grad = False
         autoencoder.eval()
+        autoencoder.to(device)
     else:
         autoencoder = None
 
