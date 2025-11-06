@@ -27,6 +27,7 @@ def evaluate_model(model_path: str, run_id: str, no_ema: bool):
     diffusion_cfg = config.DiffusionCfg()
     training_cfg = config.TrainingCfg()
     loss_cfg = config.LossCfg()
+    autoencoder_cfg = config.VQGANCfg()
 
     if run_id:
         log_path = training_cfg.save_dir / run_id / "eval_log"
@@ -38,7 +39,7 @@ def evaluate_model(model_path: str, run_id: str, no_ema: bool):
     torch.manual_seed(2025)
 
     _, _, test_loader, classes = data_loader_from_config(data_cfg)
-    model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg)
+    model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg, autoencoder_cfg)
     load_state(model_path, model, not no_ema)
     model.to(device)
 
@@ -56,6 +57,7 @@ def evaluate_model(model_path: str, run_id: str, no_ema: bool):
         "Test",
         0,
         device,
+        None,
         diffusor,
         test_loader,
         model,

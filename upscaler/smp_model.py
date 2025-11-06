@@ -18,7 +18,7 @@ class SmpModel(torch.nn.Module):
         arch: str,
         encoder_name: str,
         encoder_weights: str | None,
-        grayscale: bool,
+        input_dim: int,
         T: int,
         t_embedding_dim: int,
         shifting_window: bool,
@@ -27,8 +27,8 @@ class SmpModel(torch.nn.Module):
         assert t_embedding_dim > 0
         assert T > 0
 
-        in_channels = 2 if grayscale else 6
-        out_channels = 1 if grayscale else 3
+        in_channels = 2 * input_dim  # lq and x_t concat
+        out_channels = input_dim
         smp_model = smp.create_model(
             arch,
             encoder_name,
@@ -105,12 +105,19 @@ class SmpModel(torch.nn.Module):
         model_cfg: config.ModelCfg,
         data_cfg: config.DataCfg,
         diff_cfg: config.DiffusionCfg,
+        vqgan_cfg: config.VQGANCfg,
     ):
+        if model_cfg.autoencoder:
+            input_dim = vqgan_cfg.embed_dim
+        elif data_cfg.grayscale:
+            input_dim = 1
+        else:
+            input_dim = 3
         return cls(
             model_cfg.arch,
             model_cfg.encoder,
             model_cfg.encoder_weights,
-            data_cfg.grayscale,
+            input_dim,
             diff_cfg.T,
             model_cfg.t_embedding_dim,
             model_cfg.swin_attention,

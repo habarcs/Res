@@ -40,7 +40,9 @@ def train():
     torch.manual_seed(2025)
 
     train_loader, val_loader, test_loader, classes = data_loader_from_config(data_cfg)
-    model = SmpModel.from_config(model_cfg, data_cfg, diffusion_cfg).to(device)
+    model = SmpModel.from_config(
+        model_cfg, data_cfg, diffusion_cfg, autoencoder_cfg
+    ).to(device)
     ema_model = ema_model_from_config(model, ema_cfg, device)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
