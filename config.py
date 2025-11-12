@@ -20,9 +20,9 @@ class DiffusionCfg:
 @dataclass
 class TrainingCfg:
     # one iteration is one batch, so everything here depends on batch_size defined in datacfg
-    iterations: int = 100_000
+    iterations: int = 50_000
     scheduler_freq: int = 1000
-    val_freq: int = 10_000
+    val_freq: int = 5_000
     backprop_freq: int = 1  # for gradient accumulation
     run_id: str = "diff_" + datetime.now().isoformat(timespec="minutes")
     save_dir: Path = Path("out")
@@ -50,9 +50,9 @@ class DataCfg(BaseDataCfg):
     mean: float = 0.5
     std: float = 0.5
     grayscale: bool = True
-    batch_size: int = 64
+    batch_size: int = 32
     num_workers: int = 4
-    ultrasound_augmentation: bool = True
+    ultrasound_augmentation: bool = False
 
 
 @dataclass
@@ -65,15 +65,15 @@ class ModelCfg:
         "mit_b1"  # some modification of the code may be neccessary if changed
     )
     encoder_weights: str | None = None
-    swin_attention: bool = True
+    swin_attention: bool = False
     t_embedding_dim: int = 32
-    autoencoder: bool = True
+    autoencoder: bool = False
     autoencoder_model_path: Path = Path("")
 
 
 @dataclass
 class LossCfg:
-    use_percpetual_loss: bool = True
+    use_percpetual_loss: bool = False
     perceptual_model_path: Path = Path("")
     use_ema: bool = True
     perceptual_coef: float = 0.05
@@ -110,21 +110,21 @@ class VQGANCfg(BaseDataCfg):
     std: Sequence[float] = (0.5, 0.5, 0.5)
     num_workers: int = 4
 
-    embed_dim: int = 256
-    n_embed: int = 1024
+    embed_dim: int = 3
+    n_embed: int = 8192
     base_learning_rate: float = 4.5e-6
 
     ddconfig: dict = field(
         default_factory=lambda: {
             "double_z": False,
-            "z_channels": 256,
-            "resolution": 256,
+            "z_channels": 3,
+            "resolution": 224,
             "in_channels": 3,
             "out_ch": 3,
             "ch": 128,
-            "ch_mult": [1, 1, 2, 2, 4],  # num_down = len(ch_mult)-1
+            "ch_mult": [1, 2, 4],  # num_down = len(ch_mult)-1
             "num_res_blocks": 2,
-            "attn_resolutions": [16],
+            "attn_resolutions": [],
             "dropout": 0.0,
         }
     )
@@ -135,7 +135,7 @@ class VQGANCfg(BaseDataCfg):
             "disc_conditional": False,
             "disc_in_channels": 3,
             "disc_start": 10000,
-            "disc_weight": 0.8,
+            "disc_weight": 0.75,
             "codebook_weight": 1.0,
         }
     )
