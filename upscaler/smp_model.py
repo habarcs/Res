@@ -30,7 +30,7 @@ class SmpModel(torch.nn.Module):
 
         in_channels = 2 * input_dim  # lq and x_t concat
         out_channels = input_dim
-        extra_args = {"encoder_depth": 3} if autoencoder else {}
+        extra_args = {"encoder_depth": 3, "decoder_channels": (64, 32, 16)} if autoencoder else {}
         smp_model = smp.create_model(
             arch,
             encoder_name,
