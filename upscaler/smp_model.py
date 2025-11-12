@@ -22,6 +22,7 @@ class SmpModel(torch.nn.Module):
         T: int,
         t_embedding_dim: int,
         shifting_window: bool,
+        autoencoder: bool,
     ) -> None:
         super().__init__()
         assert t_embedding_dim > 0
@@ -29,12 +30,14 @@ class SmpModel(torch.nn.Module):
 
         in_channels = 2 * input_dim  # lq and x_t concat
         out_channels = input_dim
+        extra_args = {"encoder_depth": 3} if autoencoder else {}
         smp_model = smp.create_model(
             arch,
             encoder_name,
             encoder_weights,
             in_channels=in_channels,
             classes=out_channels,
+            **extra_args,
         )
         self.encoder = cast(torch.nn.Module, smp_model.encoder)
         self.decoder = cast(torch.nn.Module, smp_model.decoder)
@@ -121,4 +124,5 @@ class SmpModel(torch.nn.Module):
             diff_cfg.T,
             model_cfg.t_embedding_dim,
             model_cfg.swin_attention,
+            model_cfg.autoencoder,
         )
