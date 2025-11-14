@@ -1,15 +1,15 @@
 from typing import Callable, List, cast
 import segmentation_models_pytorch as smp
-from segmentation_models_pytorch.encoders.mix_transformer import Attention
+from segmentation_models_pytorch.encoders.mix_transformer import Block
 import torch
-from torchvision.models.swin_transformer import ShiftedWindowAttentionV2
+from torchvision.models.swin_transformer import SwinTransformerBlockV2
 
 import config
 
 
-class SWINAttention(ShiftedWindowAttentionV2):
-    def forward(self, x: torch.Tensor, height: int, width: int) -> torch.Tensor:  # pyright: ignore[reportIncompatibleMethodOverride]
-        return super().forward(x)
+class SwinBlock(SwinTransformerBlockV2):
+    def forward(self, x: torch.Tensor):
+        return super().forward(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
 
 
 class SmpModel(torch.nn.Module):
@@ -60,14 +60,14 @@ class SmpModel(torch.nn.Module):
     def replace_attention_with_swin_attention(self):
         for module in self.modules():
             for name, child in module.named_children():
-                if isinstance(child, Attention):
-                    shifted_attention = SWINAttention(
-                        child.dim,
-                        [8, 8],
-                        [4, 4],
-                        child.num_heads,
+                if isinstance(child, Block):
+                    swin_block = SwinBlock(
+                        child.attn.dim,
+                        child.attn.num_heads,
+                        [7, 7],
+                        [2, 2],
                     )
-                    setattr(module, name, shifted_attention)
+                    setattr(module, name, swin_block)
 
     def forward(
         self, x_t: torch.Tensor, lq: torch.Tensor, t: torch.Tensor

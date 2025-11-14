@@ -145,7 +145,7 @@ def eval_loop(
             pred = autoencoder.decode(z_pred)
             images = (
                 [lq[0]]
-                + [autoencoder.decode(p[0]) for p in progress]
+                + [autoencoder.decode(p)[0] for p in progress]
                 + [pred[0]]
                 + [hq[0]]
             )
