@@ -41,14 +41,19 @@ def train():
     ema_model = ema_model_from_config(model, ema_cfg, device)
     diffusor = Diffusion.from_config(diffusion_cfg)
 
-    combined_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
-
+    if loss_cfg.use_percpetual_loss:
+        loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
+        eval_loss = None
+    else:
+        loss = torch.nn.MSELoss()
+        eval_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
     if training_cfg.compile:
         torch.set_float32_matmul_precision("high")
         model.compile()
         if ema_model:
             ema_model.compile()
-        combined_loss.compile()
+        if loss_cfg.use_percpetual_loss:
+            loss.compile()
 
     optimizer = torch.optim.Adam(model.parameters(), training_cfg.lr_start)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -68,9 +73,10 @@ def train():
         model,
         ema_model,
         None,
-        combined_loss,
+        loss,
         optimizer,
         scheduler,
+        eval_combined_loss=eval_loss,
     )
     logger.close()
 
