@@ -49,7 +49,7 @@ class DataCfg(BaseDataCfg):
     scale_factor: int = 4
     mean: float = 0.5
     std: float = 0.5
-    grayscale: bool = True
+    grayscale: bool = False
     batch_size: int = 32
     num_workers: int = 4
     ultrasound_augmentation: bool = False
@@ -84,7 +84,7 @@ class LossCfg:
 class ClassifierDataCfg(BaseDataCfg):
     mean: Sequence[float] = (0.485, 0.456, 0.406)
     std: Sequence[float] = (0.229, 0.224, 0.225)
-    batch_size: int = 1024
+    batch_size: int = 128
     num_workers: int = 4
 
 
