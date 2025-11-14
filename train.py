@@ -63,9 +63,10 @@ def train():
 
     if loss_cfg.use_percpetual_loss:
         loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
+        eval_loss = None
     else:
         loss = torch.nn.MSELoss()
-
+        eval_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
     if training_cfg.compile:
         torch.set_float32_matmul_precision("high")
         model.compile()
@@ -95,6 +96,7 @@ def train():
         loss,
         optimizer,
         scheduler,
+        eval_combined_loss=eval_loss,
     )
     logger.close()
 

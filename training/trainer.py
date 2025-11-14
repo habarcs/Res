@@ -28,7 +28,13 @@ def train_loop(
     optimizer: optim.Optimizer,
     scheduler: optim.lr_scheduler.LRScheduler,
     start_iteration: int = 0,
+    eval_combined_loss: CombinedLoss | None = None,
 ):
+    val_loss_fn = (
+        loss_fn
+        if eval_combined_loss is None or isinstance(loss_fn, CombinedLoss)
+        else eval_combined_loss
+    )
     train_iterator = iter(train_dataloader)
     for iteration in range(start_iteration, cfg.iterations):
         model.train()
@@ -53,7 +59,8 @@ def train_loop(
             pred = model(x_t, lq, t)
 
         loss = loss_fn(pred, hq)
-        loss.backward()
+        if not autoencoder:
+            loss.backward()
 
         if (iteration + 1) % cfg.backprop_freq == 0:
             optimizer.step()
@@ -82,7 +89,7 @@ def train_loop(
                 diffusor,
                 val_dataloader,
                 val_model,
-                loss_fn,
+                val_loss_fn,
             )
             save_state(cfg, iteration + 1, val_loss, model, ema_model)
 
@@ -96,7 +103,7 @@ def train_loop(
         diffusor,
         test_dataloader,
         test_model,
-        loss_fn,
+        val_loss_fn,
     )
 
 
