@@ -69,7 +69,7 @@ class ModelCfg:
     swin_attention: bool = False
     t_embedding_dim: int = 32
     autoencoder: bool = True
-    autoencoder_model_path: Path = Path("weights/autoencoder.pth")
+    autoencoder_model_path: Path = Path("weights/autoencoder.ckpt")
 
 
 @dataclass
