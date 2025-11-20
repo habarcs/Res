@@ -75,16 +75,16 @@ class VQLPIPSWithDiscriminator(nn.Module):
 
     def forward(self, codebook_loss, inputs, reconstructions, optimizer_idx,
                 global_step, last_layer=None, cond=None, split="train"):
-        rec_loss = torch.abs(inputs.contiguous() - reconstructions.contiguous())
+        rec_loss = torch.mean(torch.abs(inputs.contiguous() - reconstructions.contiguous()))
         if self.perceptual_weight > 0:
             p_loss = self.perceptual_loss(inputs.contiguous(), reconstructions.contiguous())
-            rec_loss = rec_loss + self.perceptual_weight * p_loss
+            nll_loss = rec_loss + self.perceptual_weight * p_loss
         else:
             p_loss = torch.tensor([0.0])
+            nll_loss = rec_loss
 
-        nll_loss = rec_loss
         #nll_loss = torch.sum(nll_loss) / nll_loss.shape[0]
-        nll_loss = torch.mean(nll_loss)
+        # nll_loss = torch.mean(nll_loss)
 
         # now the GAN part
         if optimizer_idx == 0:
