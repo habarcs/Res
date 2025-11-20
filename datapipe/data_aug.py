@@ -45,7 +45,7 @@ def create_image_classification_transform(
             v2.Resize(size, InterpolationMode.BICUBIC, antialias=True),
             v2.CenterCrop(size),
             v2.PILToTensor(),
-            v2.ConvertImageDtype(),
+            v2.ToDtype(torch.float32, scale=True),
             v2.Normalize(mean=mean, std=std),
         ]
     )

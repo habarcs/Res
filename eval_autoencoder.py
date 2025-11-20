@@ -58,7 +58,7 @@ def eval(cfg: config.VQGANCfg, args):
     with torch.no_grad():
         for i, (b, _) in enumerate(test_loader):
             rec, _ = autoencoder(b)
-            save_image([b[0], rec[0]], cfg.save_dir / cfg.run_id / f"diff_{i}.png")
+            save_image([b[0], rec[0]], cfg.save_dir / cfg.run_id / f"diff_{i}.png", normalize=True)
 
 
 if __name__ == "__main__":
