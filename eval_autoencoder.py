@@ -1,6 +1,5 @@
 import argparse
 
-from pytorch_lightning.callbacks import ModelCheckpoint
 import torch
 from pytorch_lightning import Trainer
 from torchvision.utils import save_image
@@ -11,6 +10,7 @@ from datapipe.dataloader import (
 )
 from taming.models.vqgan import VQModel
 from taming.modules.losses.vqperceptual import VQLPIPSWithDiscriminator
+from training.saver import unnormalize
 
 
 def get_args():
@@ -58,7 +58,13 @@ def eval(cfg: config.VQGANCfg, args):
     with torch.no_grad():
         for i, (b, _) in enumerate(test_loader):
             rec, _ = autoencoder(b)
-            save_image([b[0], rec[0]], cfg.save_dir / cfg.run_id / f"diff_{i}.png", normalize=True)
+            save_image(
+                [
+                    unnormalize(b[0], cfg.mean[0], cfg.std[0]),
+                    unnormalize(rec[0], cfg.mean[0], cfg.std[0]),
+                ],
+                cfg.save_dir / cfg.run_id / f"diff_{i}.png",
+            )
 
 
 if __name__ == "__main__":

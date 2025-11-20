@@ -46,3 +46,7 @@ def load_state(
         model.load_state_dict(checkpoint["model"])
         print("Model loaded")
     print(f"Starting with a model of validation loss {checkpoint['loss']}")
+
+
+def unnormalize(image: torch.Tensor, mean: float, std: float):
+    return (image * std) + mean

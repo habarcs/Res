@@ -9,7 +9,7 @@ from torch.nn.functional import l1_loss
 from piq import psnr, ssim, LPIPS
 from loss.combined_loss import CombinedLoss
 from taming.models.vqgan import VQModel
-from training.saver import save_state
+from training.saver import save_state, unnormalize
 from torchvision.transforms.v2.functional import to_dtype
 
 
@@ -118,6 +118,8 @@ def eval_loop(
     dataloader: data.DataLoader,
     model: nn.Module,
     loss_fn: CombinedLoss | torch.nn.MSELoss,
+    mean: float = 0.5,
+    std: float = 0.5,
 ) -> float:
     num_batches = len(dataloader)
     loss_total = 0.0
@@ -171,6 +173,7 @@ def eval_loop(
         ).item()  # pyright: ignore[reportAttributeAccessIssue] full=false only returns one value
         lpips_total += lpips(pred, hq).item()
 
+        images= [unnormalize(img, mean, std) for img in images]
         logger.add_images(
             f"{split}/{batch_size * batch}", torch.stack(images), iteration + 1
         )

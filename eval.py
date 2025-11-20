@@ -6,6 +6,7 @@ import torch
 from datapipe.dataloader import data_loader_from_config
 from diffusion.diffusion import Diffusion
 from loss.combined_loss import CombinedLoss
+from taming.models.vqgan import VQModel
 from training.saver import load_state
 from training.trainer import eval_loop
 from upscaler.smp_model import SmpModel
@@ -47,6 +48,21 @@ def evaluate_model(model_path: str, run_id: str, no_ema: bool):
 
     combined_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
 
+    if model_cfg.autoencoder:
+        autoencoder = VQModel(
+            autoencoder_cfg.ddconfig,
+            None,
+            autoencoder_cfg.n_embed,
+            autoencoder_cfg.embed_dim,
+            model_cfg.autoencoder_model_path,
+        )
+        for param in autoencoder.parameters():
+            param.requires_grad = False
+        autoencoder.eval()
+        autoencoder.to(device)
+    else:
+        autoencoder = None
+
     if training_cfg.compile:
         torch.set_float32_matmul_precision("high")
         model.compile()
@@ -57,11 +73,13 @@ def evaluate_model(model_path: str, run_id: str, no_ema: bool):
         "Test",
         0,
         device,
-        None,
+        autoencoder,
         diffusor,
         test_loader,
         model,
         combined_loss,
+        data_cfg.mean,
+        std=data_cfg.std,
     )
     print(f"Final test loss: {loss}")
 

@@ -67,6 +67,7 @@ def train():
     else:
         loss = torch.nn.MSELoss()
         eval_loss = CombinedLoss.from_config(loss_cfg, len(classes)).to(device)
+
     if training_cfg.compile:
         torch.set_float32_matmul_precision("high")
         model.compile()
