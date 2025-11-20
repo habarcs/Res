@@ -42,6 +42,7 @@ class BaseDataCfg:
     train_ratio: float = 0.9
     val_ratio: float = 0.05
     test_ratio: float = 0.05
+    reduced_training_data: int = 0  # if 0 not reduced
 
 
 @dataclass

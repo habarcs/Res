@@ -42,7 +42,7 @@ class BaseDataCfg:
     train_ratio: float = 0.9
     val_ratio: float = 0.05
     test_ratio: float = 0.05
-    reduced_training_data: int = 0  # if 0 not reduced
+    reduced_training_data: int = 10_000  # if 0 not reduced
 
 
 @dataclass
@@ -68,7 +68,7 @@ class ModelCfg:
     encoder_weights: str | None = None
     swin_attention: bool = False
     t_embedding_dim: int = 32
-    autoencoder: bool = True
+    autoencoder: bool = False
     autoencoder_model_path: Path = Path("weights/autoencoder.pth")
 
 

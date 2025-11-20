@@ -1,3 +1,4 @@
+import random
 from typing import Iterator, Sized
 import torch
 from torch.utils import data
@@ -46,6 +47,11 @@ def data_loader_from_config(
     train, val, test = data.random_split(
         dataset, [cfg.train_ratio, cfg.val_ratio, cfg.test_ratio], split_generator
     )
+
+    if cfg.reduced_training_data:
+        print("Running reduced training dataset!!!")
+        train = data.Subset(train, indices=random.sample(train.indices, k=cfg.reduced_training_data))
+        
 
     train_sampler = InfiniteRandomSampler(train)
     train_loader = data.DataLoader(
