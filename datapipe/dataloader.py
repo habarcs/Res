@@ -50,7 +50,8 @@ def data_loader_from_config(
 
     if cfg.reduced_training_data:
         print("Running reduced training dataset!!!")
-        train = data.Subset(train, indices=random.sample(train.indices, k=cfg.reduced_training_data))
+        new_indices = random.sample(list(range(len(train))), k=cfg.reduced_training_data)
+        train = data.Subset(train, indices=new_indices)
         
 
     train_sampler = InfiniteRandomSampler(train)
