@@ -48,7 +48,7 @@ def train_loop(
             z_pred = model(z_x_t, z_lq, t)
             loss_autoencoder = torch.nn.functional.mse_loss(z_pred, z_hq)
             loss_autoencoder.backward()
-            pred = autoencoder.decode(z_pred)
+            pred = autoencoder.decode(z_pred.detach())
 
             logger.add_scalar(
                 "Train/latentmseloss", loss_autoencoder.item(), iteration + 1
